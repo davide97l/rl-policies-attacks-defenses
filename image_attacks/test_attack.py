@@ -12,16 +12,16 @@ from image_attacks.train_CNN import CNN
 
 class SimpleModel(torch.nn.Module):
 
-  def __init__(self):
-    super(SimpleModel, self).__init__()
-    self.w1 = torch.tensor([[1.5, .3], [-2, .3]])
-    self.w2 = torch.tensor([[-2.4, 1.2], [.5, -2.3]])
+    def __init__(self):
+        super(SimpleModel, self).__init__()
+        self.w1 = torch.tensor([[1.5, .3], [-2, .3]])
+        self.w2 = torch.tensor([[-2.4, 1.2], [.5, -2.3]])
 
-  def forward(self, x):
-    x = torch.matmul(x, self.w1)
-    x = torch.sigmoid(x)
-    x = torch.matmul(x, self.w2)
-    return x
+    def forward(self, x):
+        x = torch.matmul(x, self.w1)
+        x = torch.sigmoid(x)
+        x = torch.matmul(x, self.w2)
+        return x
 
 
 if __name__ == '__main__':
