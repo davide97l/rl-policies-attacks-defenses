@@ -9,18 +9,24 @@ from typing import Any, Dict, List, Union, Optional, Callable
 from tianshou.env import BaseVectorEnv
 from tianshou.policy import BasePolicy
 from tianshou.data import Batch, ReplayBuffer, ListReplayBuffer, to_numpy
+import itertools, copy
 
 
-class uniform_attack_collector(Collector):
+class critical_strategy_attack_collector(Collector):
     """
     :param policy: an instance of the :class:`~tianshou.policy.BasePolicy`
         class.
     :param env: a ``gym.Env`` environment or an instance of the
         :class:`~tianshou.env.BaseVectorEnv` class.
     :param adv: an instance of the :class:`~advertorch.attacks.base.Attack`
-        class implementing an image adversarial attack.
-    :param atk_frequency: float between 0 and 1, frequency of the attacks
-        (i.e. 0.25 -> attack once each 4 frames)
+        class implementing an image adversarial attack. It has to support
+        targeted attacks.
+    :param n: int, number of attacks in a sequence.
+    :param m: int, number of observations in a sequence.
+    :param beta: float, minimumm reward margin to consider an adversarial
+        sequence respect to the standard sequence.
+    :param perfect_attack: force adversarial attacks on observations to be
+        always effective (ignore the ``adv`` param).
     :param buffer: an instance of the :class:`~tianshou.data.ReplayBuffer`
         class, or a list of :class:`~tianshou.data.ReplayBuffer`. If set to
         ``None``, it will automatically assign a small-size
@@ -41,7 +47,10 @@ class uniform_attack_collector(Collector):
                  policy: BasePolicy,
                  env: Union[gym.Env, BaseVectorEnv],
                  adv: Attack,
-                 atk_frequency: float = 1.,
+                 n: int = 3,
+                 m: int = None,
+                 beta: float = 0.,
+                 perfect_attack: bool = False,
                  buffer: Optional[Union[ReplayBuffer, List[ReplayBuffer]]] = None,
                  preprocess_fn: Callable[[Any], Union[dict, Batch]] = None,
                  stat_size: Optional[int] = 100,
@@ -49,10 +58,17 @@ class uniform_attack_collector(Collector):
                  ):
         super().__init__(policy, env, buffer, preprocess_fn, stat_size, **kwargs)
         self.adv = adv  # advertorch attack method
-        self.atk_frequency = atk_frequency
-        assert 0 <= atk_frequency <= 1, \
-            "atk_frequency should be included between 0 and 1"
-        self.atk_frames = int(1 / atk_frequency)
+        self.adv.targeted = True
+        self.n = n
+        if m == None:
+            m = n
+        self.m = m
+        assert n <= m, \
+            "n should be <= m"
+        self.beta = beta
+        assert beta >= 0, \
+            "beta should be >= 0"
+        self.perfect_attack = perfect_attack
 
     def collect(self,
                 n_step: int = 0,
@@ -97,6 +113,76 @@ class uniform_attack_collector(Collector):
         frames_count = 0  # number of observed frames
         n_attacks = 0  # number of attacks performed
         succ_atk = 0  # number of successful image attacks
+        len_adv_atk = 0  # number of adv_actions left
+
+        def adversarial_policy(batch):
+            """Find an adversarial policy or return the standard one.
+            Return an array containing the adversarial actions and their length"""
+            action_shape = self.env.action_space.shape or self.env.action_space.n
+            action_shape = np.prod(action_shape)  # number of actions
+            atk_strategies = [p for p in itertools.product([0, 1], repeat=self.n)]  # define attack strategies
+            # init_batch = copy.deepcopy(batch)  # save deep copy of initial state
+            init_env = copy.deepcopy(self.env)  # save deep copy of initial env
+            env = copy.deepcopy(init_env)
+            ### test standard policy ###
+            std_rew = 0  # cumulative reward
+            best_acts = []  # actions of the best adversarial policy
+            for i in range(self.m):
+                with torch.no_grad():
+                    result = self.policy(batch, self.state)
+                _act = to_numpy(result.act)
+                obs_next, _rew, _done, _info = env.step(_act[0])
+                _obs = self._make_batch(obs_next)
+                _rew = self._make_batch(_rew)
+                _done = self._make_batch(_done)
+                std_rew += _rew
+                best_acts.append(_act[0])
+                if _done:
+                    break
+                batch = Batch(
+                    obs=_obs, act=_act, rew=_rew,
+                    done=_done, obs_next=None, info=None, policy=None)
+            env = copy.deepcopy(init_env)  # restore the env
+            worst_rew = std_rew  # best adversarial reward
+            len_adv_atk = 0  # number of adversarial actions
+            ### test adversarial policies ###
+            for atk in atk_strategies:
+                env = copy.deepcopy(init_env)
+                acts = list(atk)
+                atk_rew = 0
+                atk_len = 0
+                for act in acts:  # play n steps according to adversarial policy
+                    obs_next, _rew, _done, _info = env.step(act)
+                    atk_rew += _rew
+                    atk_len += 1
+                    if _done:
+                        break
+                if self.m > self.n:  # play n-m steps according to standard policy
+                    _obs = self._make_batch(obs_next)
+                    batch = Batch(
+                        obs=_obs, act=None, rew=None,
+                        done=None, obs_next=None, info=None, policy=None)
+                    for i in range(self.m - self.n):
+                        with torch.no_grad():
+                            result = self.policy(batch, self.state)
+                        _act = to_numpy(result.act)
+                        obs_next, _rew, _done, _info = env.step(_act[0])
+                        _obs = self._make_batch(obs_next)
+                        _rew = self._make_batch(_rew)
+                        _done = self._make_batch(_done)
+                        atk_rew += _rew
+                        acts.append(_act[0])
+                        if _done:
+                            break
+                        batch = Batch(
+                            obs=_obs, act=_act, rew=_rew,
+                            done=_done, obs_next=None, info=None, policy=None)
+                if atk_rew + self.beta < worst_rew:
+                    worst_rew = atk_rew
+                    best_acts = acts
+                    len_adv_atk = atk_len
+            return best_acts, len_adv_atk
+
         while True:
             if warning_count >= 100000:
                 warnings.warn(
@@ -107,6 +193,13 @@ class uniform_attack_collector(Collector):
                 obs=self._obs, act=self._act, rew=self._rew,
                 done=self._done, obs_next=None, info=self._info,
                 policy=None)
+            ### define adversarial policy ###
+            if frames_count % self.m == 0:
+                adv_acts, len_adv_atk = adversarial_policy(batch)
+                n_attacks += len_adv_atk
+                # print("Adv actions", adv_acts)
+                # print("Lenght", len_adv_atk)
+            #################################
             if random:  # take random actions
                 action_space = self.env.action_space
                 if isinstance(action_space, list):
@@ -120,18 +213,22 @@ class uniform_attack_collector(Collector):
             self._policy = to_numpy(result.policy) \
                 if hasattr(result, 'policy') else [{}] * self.env_num  # distribution over actions
             self._act = to_numpy(result.act)
-            ##########UNIFORM ATTACK#########
-            if frames_count % self.atk_frames == 0:
+            ##########ADVERSARIAL ATTACK#########
+            if len_adv_atk > 0:
                 device = 'cuda' if torch.cuda.is_available() else 'cpu'
                 ori_obs = torch.FloatTensor(batch.obs).to(device)  # get the original observations
-                ori_act = torch.tensor(self._act).to(device)  # get the original actions
-                adv_obs = self.adv.perturb(ori_obs, ori_act)  # create adversarial observations
-                y = self.adv.predict(adv_obs)
-                _, adv_actions = torch.max(y, 1)  # predict adversarial actions
-                self._act = adv_actions.cpu().detach().numpy()  # replace original actions with adversarial actions
-                if self._act != ori_act:
+                adv_act = adv_acts.pop(0)
+                if not self.perfect_attack:
+                    adv_act_t = torch.from_numpy(np.array([adv_act])).to(device)
+                    adv_obs = self.adv.perturb(ori_obs, adv_act_t)  # create adversarial observations
+                    y = self.adv.predict(adv_obs)
+                    _, adv_actions = torch.max(y, 1)  # predict adversarial actions
+                    self._act = adv_actions.cpu().detach().numpy()  # replace original actions with adversarial actions"""
+                else:
+                    self._act = [adv_act]
+                if self._act == [adv_act]:
                     succ_atk += 1
-                n_attacks += 1
+            len_adv_atk -= 1
             frames_count += 1
             ##################################
             obs_next, self._rew, self._done, self._info = self.env.step(
@@ -249,5 +346,6 @@ class uniform_attack_collector(Collector):
             'v/ep': self.episode_speed.get(),
             'rew': reward_sum / n_episode,
             'len': length_sum / n_episode,
+            'atk_rate(%)': n_attacks / cur_step,
             'succ_atks(%)': succ_atk / n_attacks,
         }

@@ -1,5 +1,6 @@
 from tianshou.data import Collector
 from advertorch.attacks.base import Attack
+import torch.nn as nn
 import gym
 import time
 import torch
@@ -11,7 +12,7 @@ from tianshou.policy import BasePolicy
 from tianshou.data import Batch, ReplayBuffer, ListReplayBuffer, to_numpy
 
 
-class uniform_attack_collector(Collector):
+class strategically_time_attack_collector(Collector):
     """
     :param policy: an instance of the :class:`~tianshou.policy.BasePolicy`
         class.
@@ -19,8 +20,8 @@ class uniform_attack_collector(Collector):
         :class:`~tianshou.env.BaseVectorEnv` class.
     :param adv: an instance of the :class:`~advertorch.attacks.base.Attack`
         class implementing an image adversarial attack.
-    :param atk_frequency: float between 0 and 1, frequency of the attacks
-        (i.e. 0.25 -> attack once each 4 frames)
+    :param beta: attacks only if max(prob actions) - min(prob actions) >= beta
+    :param softmax: if true, apply softmax to convert logits into probabilites
     :param buffer: an instance of the :class:`~tianshou.data.ReplayBuffer`
         class, or a list of :class:`~tianshou.data.ReplayBuffer`. If set to
         ``None``, it will automatically assign a small-size
@@ -41,7 +42,8 @@ class uniform_attack_collector(Collector):
                  policy: BasePolicy,
                  env: Union[gym.Env, BaseVectorEnv],
                  adv: Attack,
-                 atk_frequency: float = 1.,
+                 beta: float = 0.5,
+                 softmax: bool = True,
                  buffer: Optional[Union[ReplayBuffer, List[ReplayBuffer]]] = None,
                  preprocess_fn: Callable[[Any], Union[dict, Batch]] = None,
                  stat_size: Optional[int] = 100,
@@ -49,10 +51,10 @@ class uniform_attack_collector(Collector):
                  ):
         super().__init__(policy, env, buffer, preprocess_fn, stat_size, **kwargs)
         self.adv = adv  # advertorch attack method
-        self.atk_frequency = atk_frequency
-        assert 0 <= atk_frequency <= 1, \
-            "atk_frequency should be included between 0 and 1"
-        self.atk_frames = int(1 / atk_frequency)
+        self.beta = beta
+        assert 0 <= beta, \
+            "beta should >= 0"
+        self.softmax = softmax
 
     def collect(self,
                 n_step: int = 0,
@@ -82,6 +84,7 @@ class uniform_attack_collector(Collector):
             * ``v/ep`` the speed of episode per second.
             * ``rew`` the mean reward over collected episodes.
             * ``len`` the mean length over collected episodes.
+            * ``atk_rate(%)`` ratio of performed attacks over steps.
             * ``succ_atks(%)`` ratio of successful attacks over performed attacks.
         """
         warning_count = 0  # counts the number of steps
@@ -94,7 +97,6 @@ class uniform_attack_collector(Collector):
         cur_episode = np.zeros(self.env_num) if self._multi_env else 0
         reward_sum = 0
         length_sum = 0
-        frames_count = 0  # number of observed frames
         n_attacks = 0  # number of attacks performed
         succ_atk = 0  # number of successful image attacks
         while True:
@@ -118,10 +120,18 @@ class uniform_attack_collector(Collector):
                     result = self.policy(batch, self.state)
             self.state = result.get('state', None)  # get the state
             self._policy = to_numpy(result.policy) \
-                if hasattr(result, 'policy') else [{}] * self.env_num  # distribution over actions
+                if hasattr(result, 'policy') else [{}] * self.env_num
             self._act = to_numpy(result.act)
-            ##########UNIFORM ATTACK#########
-            if frames_count % self.atk_frames == 0:
+            ##########ATTACK##################
+            if self.softmax:
+                softmax = nn.Softmax(dim=1)
+                prob_a = softmax(result.logits).numpy()  # distribution over actions
+            else:
+                prob_a = result.logits.numpy()
+            max_a = np.amax(prob_a)
+            min_a = np.amin(prob_a)
+            diff = max_a - min_a
+            if diff >= self.beta:
                 device = 'cuda' if torch.cuda.is_available() else 'cpu'
                 ori_obs = torch.FloatTensor(batch.obs).to(device)  # get the original observations
                 ori_act = torch.tensor(self._act).to(device)  # get the original actions
@@ -132,7 +142,6 @@ class uniform_attack_collector(Collector):
                 if self._act != ori_act:
                     succ_atk += 1
                 n_attacks += 1
-            frames_count += 1
             ##################################
             obs_next, self._rew, self._done, self._info = self.env.step(
                 self._act if self._multi_env else self._act[0])  # execute the actions
@@ -249,5 +258,6 @@ class uniform_attack_collector(Collector):
             'v/ep': self.episode_speed.get(),
             'rew': reward_sum / n_episode,
             'len': length_sum / n_episode,
+            'atk_rate(%)': n_attacks / cur_step,
             'succ_atks(%)': succ_atk / n_attacks,
         }
