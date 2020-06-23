@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Union, Optional, Callable
 from tianshou.env import BaseVectorEnv
 from tianshou.policy import BasePolicy
 from tianshou.data import Batch, ReplayBuffer, ListReplayBuffer, to_numpy
+import random as rd
 
 
 class strategically_time_attack_collector(Collector):
@@ -21,7 +22,9 @@ class strategically_time_attack_collector(Collector):
     :param adv: an instance of the :class:`~advertorch.attacks.base.Attack`
         class implementing an image adversarial attack.
     :param beta: attacks only if max(prob actions) - min(prob actions) >= beta
-    :param softmax: if true, apply softmax to convert logits into probabilites
+    :param softmax: if true, apply softmax to convert logits into probabilities
+    :param perfect_attack: force adversarial attacks on observations to be
+        always effective (ignore the ``adv`` param).
     :param buffer: an instance of the :class:`~tianshou.data.ReplayBuffer`
         class, or a list of :class:`~tianshou.data.ReplayBuffer`. If set to
         ``None``, it will automatically assign a small-size
@@ -44,6 +47,7 @@ class strategically_time_attack_collector(Collector):
                  adv: Attack,
                  beta: float = 0.5,
                  softmax: bool = True,
+                 perfect_attack: bool = False,
                  buffer: Optional[Union[ReplayBuffer, List[ReplayBuffer]]] = None,
                  preprocess_fn: Callable[[Any], Union[dict, Batch]] = None,
                  stat_size: Optional[int] = 100,
@@ -55,6 +59,7 @@ class strategically_time_attack_collector(Collector):
         assert 0 <= beta, \
             "beta should >= 0"
         self.softmax = softmax
+        self.perfect_attack = perfect_attack
 
     def collect(self,
                 n_step: int = 0,
@@ -122,7 +127,7 @@ class strategically_time_attack_collector(Collector):
             self._policy = to_numpy(result.policy) \
                 if hasattr(result, 'policy') else [{}] * self.env_num
             self._act = to_numpy(result.act)
-            ##########ATTACK##################
+            ##########ADVERSARIAL ATTACK##################
             if self.softmax:
                 softmax = nn.Softmax(dim=1)
                 prob_a = softmax(result.logits).numpy()  # distribution over actions
@@ -132,17 +137,24 @@ class strategically_time_attack_collector(Collector):
             min_a = np.amin(prob_a)
             diff = max_a - min_a
             if diff >= self.beta:
-                device = 'cuda' if torch.cuda.is_available() else 'cpu'
-                ori_obs = torch.FloatTensor(batch.obs).to(device)  # get the original observations
-                ori_act = torch.tensor(self._act).to(device)  # get the original actions
-                adv_obs = self.adv.perturb(ori_obs, ori_act)  # create adversarial observations
-                y = self.adv.predict(adv_obs)
-                _, adv_actions = torch.max(y, 1)  # predict adversarial actions
-                self._act = adv_actions.cpu().detach().numpy()  # replace original actions with adversarial actions
+                if not self.perfect_attack:
+                    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+                    ori_obs = torch.FloatTensor(batch.obs).to(device)  # get the original observations
+                    ori_act = self._act  # get the original actions
+                    ori_act_t = torch.tensor(ori_act).to(device)
+                    adv_obs = self.adv.perturb(ori_obs, ori_act_t)  # create adversarial observations
+                    y = self.adv.predict(adv_obs)
+                    _, adv_actions = torch.max(y, 1)  # predict adversarial actions
+                    self._act = adv_actions.cpu().detach().numpy()  # replace original actions with adversarial actions
+                else:
+                    ori_act = self._act
+                    action_shape = self.env.action_space.shape or self.env.action_space.n
+                    while self._act == ori_act:
+                        self._act = [rd.randint(0, np.prod(action_shape)-1)]
                 if self._act != ori_act:
                     succ_atk += 1
                 n_attacks += 1
-            ##################################
+            ###########################################
             obs_next, self._rew, self._done, self._info = self.env.step(
                 self._act if self._multi_env else self._act[0])  # execute the actions
             if not self._multi_env:

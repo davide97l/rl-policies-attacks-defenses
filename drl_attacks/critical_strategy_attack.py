@@ -23,7 +23,7 @@ class critical_strategy_attack_collector(Collector):
         targeted attacks.
     :param n: int, number of attacks in a sequence.
     :param m: int, number of observations in a sequence.
-    :param beta: float, minimumm reward margin to consider an adversarial
+    :param beta: float, minimum reward margin to consider an adversarial
         sequence respect to the standard sequence.
     :param perfect_attack: force adversarial attacks on observations to be
         always effective (ignore the ``adv`` param).
