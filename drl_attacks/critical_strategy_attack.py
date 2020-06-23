@@ -171,7 +171,6 @@ class critical_strategy_attack_collector(Collector):
                         _rew = self._make_batch(_rew)
                         _done = self._make_batch(_done)
                         atk_rew += _rew
-                        acts.append(_act[0])
                         if _done:
                             break
                         batch = Batch(
@@ -214,7 +213,7 @@ class critical_strategy_attack_collector(Collector):
                 if hasattr(result, 'policy') else [{}] * self.env_num  # distribution over actions
             self._act = to_numpy(result.act)
             ##########ADVERSARIAL ATTACK#########
-            if len_adv_atk > 0:
+            if len_adv_atk > 0 and len(adv_acts) > 0:
                 device = 'cuda' if torch.cuda.is_available() else 'cpu'
                 ori_obs = torch.FloatTensor(batch.obs).to(device)  # get the original observations
                 adv_act = adv_acts.pop(0)
