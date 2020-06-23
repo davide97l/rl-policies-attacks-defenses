@@ -59,7 +59,8 @@ class critical_strategy_attack_collector(Collector):
                  ):
         super().__init__(policy, env, buffer, preprocess_fn, stat_size, **kwargs)
         self.adv = adv  # advertorch attack method
-        self.adv.targeted = True
+        if not perfect_attack:
+            self.adv.targeted = True
         self.n = n
         if m == None:
             m = n
@@ -153,7 +154,7 @@ class critical_strategy_attack_collector(Collector):
                     atk_rew += _rew
                     if _done:
                         break
-                if self.m > self.n:  # play n-m steps according to standard policy
+                if self.m > self.n and not _done:  # play n-m steps according to standard policy
                     _obs = self._make_batch(obs_next)
                     batch = Batch(
                         obs=_obs, act=None, rew=None,
