@@ -9,11 +9,10 @@ from typing import Any, Dict, List, Union, Optional, Callable
 from tianshou.env import BaseVectorEnv
 from tianshou.policy import BasePolicy
 from tianshou.data import Batch, ReplayBuffer, ListReplayBuffer, to_numpy
-import itertools
-import copy
+import itertools, copy
 
 
-class critical_strategy_attack_collector(Collector):
+class critical_point_attack_collector(Collector):
     """
     :param policy: an instance of the :class:`~tianshou.policy.BasePolicy`
         class.
@@ -24,8 +23,11 @@ class critical_strategy_attack_collector(Collector):
         targeted attacks.
     :param n: int, number of attacks in a sequence.
     :param m: int, number of observations in a sequence.
-    :param beta: float, minimum reward margin to consider an adversarial
+    :param beta: float, minimum DAM margin to consider an adversarial
         sequence respect to the standard sequence.
+    :param function dam: danger aware metrics, if None, DAM is based on the
+        reward achieved at the current state. Higher DAM correspond to
+        worst state.
     :param perfect_attack: force adversarial attacks on observations to be
         always effective (ignore the ``adv`` param).
     :param buffer: an instance of the :class:`~tianshou.data.ReplayBuffer`
@@ -51,6 +53,7 @@ class critical_strategy_attack_collector(Collector):
                  n: int = 3,
                  m: int = None,
                  beta: float = 0.,
+                 dam: Callable = None,
                  perfect_attack: bool = False,
                  buffer: Optional[Union[ReplayBuffer, List[ReplayBuffer]]] = None,
                  preprocess_fn: Callable[[Any], Union[dict, Batch]] = None,
@@ -70,6 +73,7 @@ class critical_strategy_attack_collector(Collector):
         assert beta >= 0, \
             "beta should be >= 0"
         self.perfect_attack = perfect_attack
+        self.dam = dam
 
     def collect(self,
                 n_step: int = 0,
@@ -126,7 +130,6 @@ class critical_strategy_attack_collector(Collector):
             init_env = copy.deepcopy(self.env)  # save deep copy of initial env
             env = copy.deepcopy(init_env)
             ### test standard policy ###
-            std_rew = 0  # cumulative reward
             best_acts = []  # actions of the best adversarial policy
             for i in range(self.m):
                 with torch.no_grad():
@@ -134,27 +137,27 @@ class critical_strategy_attack_collector(Collector):
                 _act = to_numpy(result.act)
                 obs_next, _rew, _done, _info = env.step(_act[0])
                 _obs = self._make_batch(obs_next)
-                _rew = self._make_batch(_rew)
-                std_rew += _rew
                 best_acts.append(_act[0])
                 if _done:
                     break
-                batch = Batch(
-                    obs=_obs, act=None, rew=None,
-                    done=None, obs_next=None, info=None, policy=None)
-            worst_atk_rew = std_rew  # best adversarial reward
+                batch = Batch(obs=_obs, act=None, rew=None,
+                    done=_done, obs_next=None, info=None, policy=None)
+            if self.dam is not None:
+                std_dam = self.dam(_obs)  # standard DAM
+            else:
+                std_dam = -_rew  # reward-based DAM
+            best_atk_dam = std_dam
             ### test adversarial policies ###
             for atk in atk_strategies:
-                env = copy.deepcopy(init_env)
+                env = copy.deepcopy(init_env)  # copy initial environment state
                 acts = list(atk)
-                atk_rew = 0
+                atk_len = 0
                 for act in acts:  # play n steps according to adversarial policy
                     obs_next, _rew, _done, _info = env.step(act)
-                    atk_rew += _rew
                     if _done:
                         break
+                _obs = self._make_batch(obs_next)
                 if self.m > self.n:  # play n-m steps according to standard policy
-                    _obs = self._make_batch(obs_next)
                     batch = Batch(
                         obs=_obs, act=None, rew=None,
                         done=None, obs_next=None, info=None, policy=None)
@@ -164,15 +167,16 @@ class critical_strategy_attack_collector(Collector):
                         _act = to_numpy(result.act)
                         obs_next, _rew, _done, _info = env.step(_act[0])
                         _obs = self._make_batch(obs_next)
-                        _rew = self._make_batch(_rew)
-                        atk_rew += _rew
                         if _done:
                             break
-                        batch = Batch(
-                            obs=_obs, act=None, rew=None,
-                            done=None, obs_next=None, info=None, policy=None)
-                if atk_rew + self.beta < std_rew and atk_rew < worst_atk_rew:
-                    worst_atk_rew = atk_rew
+                        batch = Batch(obs=_obs, act=None, rew=None,
+                            done=_done, obs_next=None, info=None, policy=None)
+                if self.dam is not None:
+                    atk_dam = self.dam(_obs)  # adversarial DAM
+                else:
+                    atk_dam = -_rew
+                if atk_dam + self.beta > std_dam and atk_dam > best_atk_dam:
+                    best_atk_dam = atk_dam
                     best_acts = acts
             return best_acts
 
@@ -190,7 +194,7 @@ class critical_strategy_attack_collector(Collector):
             if frames_count % self.m == 0:
                 adv_acts = adversarial_policy(batch)
                 # print("Adv actions", adv_acts)
-                # print("Lenght", len_adv_atk)
+                # print("Lenght", len(adv_acts))
             #################################
             if random:  # take random actions
                 action_space = self.env.action_space
@@ -222,7 +226,7 @@ class critical_strategy_attack_collector(Collector):
                 if self._act == [adv_act]:
                     succ_atk += 1
             frames_count += 1
-            ##################################
+            #####################################
             obs_next, self._rew, self._done, self._info = self.env.step(
                 self._act if self._multi_env else self._act[0])  # execute the actions
             if not self._multi_env:
