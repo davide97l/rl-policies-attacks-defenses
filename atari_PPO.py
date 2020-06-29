@@ -68,9 +68,10 @@ def test_ppo(args=get_args()):
     test_envs.seed(args.seed)
     # model
     net = Net(args.layer_num, args.state_shape, device=args.device)
-    actor = Actor(net, args.action_shape).to(args.device)
+    actor = Actor(net, args.action_shape)
     if args.test:
         actor = load_model(actor, model_name=args.modelname, save_path=args.savedir)
+    actor = actor.to(args.device)
     critic = Critic(net).to(args.device)
     optim = torch.optim.Adam(list(
         actor.parameters()) + list(critic.parameters()), lr=args.lr)

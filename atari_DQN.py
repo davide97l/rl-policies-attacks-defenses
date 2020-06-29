@@ -65,9 +65,9 @@ def test_dqn(args=get_args()):
     net = DQN(
         args.state_shape[0], args.state_shape[1],
         args.action_shape, args.device)
-    net = net.to(args.device)
     if args.test:
         net = load_model(net, model_name=args.modelname, save_path=args.savedir)
+    net = net.to(args.device)
     optim = torch.optim.Adam(net.parameters(), lr=args.lr)
 
     policy = DQNPolicy(
