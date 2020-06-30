@@ -10,7 +10,7 @@ from tianshou.trainer import offpolicy_trainer
 from tianshou.data import Collector, ReplayBuffer
 from tianshou.env.atari import create_atari_environment
 
-from discrete_net import DQN
+from discrete_net import *
 from drl_attacks.utils import *
 
 
@@ -37,6 +37,7 @@ def get_args():
     parser.add_argument('--modelname', type=str, default='dqn')
     parser.add_argument('--test', default=False, action='store_true')
     parser.add_argument('--eval-num', type=int, default=1)
+    parser.add_argument('--dqn-model', type=int, default=0)  # select different dqn architectures
     parser.add_argument(
         '--device', type=str,
         default='cuda' if torch.cuda.is_available() else 'cpu')
@@ -62,9 +63,16 @@ def test_dqn(args=get_args()):
     train_envs.seed(args.seed)
     test_envs.seed(args.seed)
     # model
-    net = DQN(
-        args.state_shape[0], args.state_shape[1],
-        args.action_shape, args.device)
+    if args.dqn_model == 0:
+        net = DQN(
+            args.state_shape[0], args.state_shape[1],
+            args.action_shape, args.device)
+    elif args.dqn_model == 1:
+        net = DQN2(
+            args.state_shape[0], args.state_shape[1],
+            args.action_shape, args.device)
+    else:
+        raise Exception("Model not found! Accepted values [0,1]")
     if args.test:
         net = load_model(net, model_name=args.modelname, save_path=args.savedir)
     net = net.to(args.device)

@@ -99,8 +99,14 @@ class DQN2(nn.Module):
         def conv2d_size_out(size, kernel_size=3, stride=1):
             return (size - (kernel_size - 1) - 1) // stride + 1
 
-        convw = conv2d_size_out(conv2d_size_out(conv2d_size_out(w)))
-        convh = conv2d_size_out(conv2d_size_out(conv2d_size_out(h)))
+        convw = conv2d_size_out(conv2d_size_out(conv2d_size_out(w,
+                                                                kernel_size=8, stride=4),
+                                                kernel_size=4, stride=2),
+                                kernel_size=3, stride=1)
+        convh = conv2d_size_out(conv2d_size_out(conv2d_size_out(h,
+                                                                kernel_size=8, stride=4),
+                                                kernel_size=4, stride=2),
+                                kernel_size=3, stride=1)
         linear_input_size = convw * convh * 64
         self.fc = nn.Linear(linear_input_size, 512)
         self.head = nn.Linear(512, action_shape)
@@ -114,3 +120,11 @@ class DQN2(nn.Module):
         x = F.relu(self.bn3(self.conv3(x)))
         x = self.fc(x.reshape(x.size(0), -1))
         return self.head(x), state
+
+
+if __name__ == '__main__':
+    # correctness test
+    x = np.random.uniform(size=(1, 84, 84, 4))
+    net = DQN2(84, 84, 4)
+    y, _ = net(x)
+    print(y.shape)
