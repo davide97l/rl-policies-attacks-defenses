@@ -51,6 +51,7 @@ class Critic(nn.Module):
 
 
 class DQN(nn.Module):
+    """Default Tianshou architecture"""
 
     def __init__(self, h, w, action_shape, device='cpu'):
         super(DQN, self).__init__()
@@ -84,6 +85,7 @@ class DQN(nn.Module):
 
 
 class DQN2(nn.Module):
+    """Architecture taken from the paper https://arxiv.org/abs/1710.02298 (Rainbow)"""
 
     def __init__(self, h, w, action_shape, device='cpu'):
         super(DQN2, self).__init__()
@@ -120,11 +122,3 @@ class DQN2(nn.Module):
         x = F.relu(self.bn3(self.conv3(x)))
         x = self.fc(x.reshape(x.size(0), -1))
         return self.head(x), state
-
-
-if __name__ == '__main__':
-    # correctness test
-    x = np.random.uniform(size=(1, 84, 84, 4))
-    net = DQN2(84, 84, 4)
-    y, _ = net(x)
-    print(y.shape)

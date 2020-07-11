@@ -126,9 +126,9 @@ class critical_strategy_attack_collector(Collector):
             atk_strategies = [p for p in itertools.product(actions, repeat=self.n)]  # define attack strategies
             init_env = copy.deepcopy(self.env)  # save deep copy of initial env
             env = copy.deepcopy(init_env)
-            ### test standard policy ###
             std_rew = 0  # cumulative reward
             best_acts = []  # actions of the best adversarial policy
+            ### test standard policy ###
             for i in range(self.m):
                 with torch.no_grad():
                     result = self.policy(batch, self.state)
@@ -192,7 +192,6 @@ class critical_strategy_attack_collector(Collector):
                 adv_acts = adversarial_policy(batch)
                 # print("Adv actions", adv_acts)
                 # print("Lenght", len_adv_atk)
-            #################################
             if random:  # take random actions
                 action_space = self.env.action_space
                 if isinstance(action_space, list):

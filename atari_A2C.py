@@ -11,7 +11,7 @@ from tianshou.data import Collector, ReplayBuffer
 from tianshou.env.atari import create_atari_environment
 
 from discrete_net import Net, Actor, Critic
-from drl_attacks.utils import *
+from utils import *
 
 
 def get_args():
