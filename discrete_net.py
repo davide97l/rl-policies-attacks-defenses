@@ -122,3 +122,28 @@ class DQN2(nn.Module):
         x = F.relu(self.bn3(self.conv3(x)))
         x = self.fc(x.reshape(x.size(0), -1))
         return self.head(x), state
+
+
+class AntagonistNet(nn.Module):
+    def __init__(self, layer_num, state_shape, action_shape=0, device='cpu'):
+        super().__init__()
+        self.device = device
+        self.model = [
+            nn.Linear(np.prod(state_shape), 128),
+            nn.ReLU(inplace=True)]
+        for i in range(layer_num):
+            self.model += [nn.Linear(128, 128), nn.ReLU(inplace=True)]
+        self.model = nn.Sequential(*self.model)
+        self.actor = nn.Linear(128, np.prod(action_shape))
+        self.atk_critic = nn.Linear(128, 1)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, s, state=None, info={}):
+        if not isinstance(s, torch.Tensor):
+            s = torch.tensor(s, device=self.device, dtype=torch.float)
+        batch = s.shape[0]
+        s = s.view(batch, -1)
+        output = self.model(s)
+        logits = self.actor(output)
+        p = self.sigmoid(self.atk_critic(output))
+        return logits, p, state
