@@ -6,9 +6,7 @@ import torch
 class NetAdapter(nn.Module):
     """
     Tianshou models return (logits, state) while Advertorch models should return (logits).
-    Thus this class adapts Tianshou output to Advertorch output
-    """
-
+    Hence, this class adapts Tianshou output to Advertorch output."""
     def __init__(self, net):
         super().__init__()
         self.net = net
