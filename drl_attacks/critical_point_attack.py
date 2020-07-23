@@ -125,13 +125,13 @@ class critical_point_attack_collector(Collector):
             """Find an adversarial policy or return the standard one.
             Return an array containing the adversarial actions and their length"""
             action_shape = self.env.action_space.shape or self.env.action_space.n
-            action_shape = np.prod(action_shape)  # number of discrete actions
+            action_shape = np.prod(action_shape)  # number of actions
             actions = [a for a in range(action_shape)]
             atk_strategies = [p for p in itertools.product(actions, repeat=self.n)]  # define attack strategies
-            init_env = copy.deepcopy(self.env)  # copy initial env
+            init_env = copy.deepcopy(self.env)  # save deep copy of initial env
             env = copy.deepcopy(init_env)
-            best_acts = []  # actions of the best adversarial policy
             ### test standard policy ###
+            best_acts = []  # actions of the best adversarial policy
             for i in range(self.m):
                 with torch.no_grad():
                     result = self.policy(batch, self.state)
@@ -142,16 +142,17 @@ class critical_point_attack_collector(Collector):
                 if _done:
                     break
                 batch = Batch(obs=_obs, act=None, rew=None,
-                              done=_done, obs_next=None, info=None, policy=None)
+                    done=_done, obs_next=None, info=None, policy=None)
             if self.dam is not None:
-                std_dam = self.dam(_obs)  # DAM of the standard policy
+                std_dam = self.dam(_obs)  # standard DAM
             else:
-                std_dam = -_rew  # use a reward-based DAM
-            best_atk_dam = std_dam  # DAM of the best attack
+                std_dam = -_rew  # reward-based DAM
+            best_atk_dam = std_dam
             ### test adversarial policies ###
             for atk in atk_strategies:
                 env = copy.deepcopy(init_env)  # copy initial environment state
                 acts = list(atk)
+                atk_len = 0
                 for act in acts:  # play n steps according to adversarial policy
                     obs_next, _rew, _done, _info = env.step(act)
                     if _done:
@@ -170,7 +171,7 @@ class critical_point_attack_collector(Collector):
                         if _done:
                             break
                         batch = Batch(obs=_obs, act=None, rew=None,
-                                      done=_done, obs_next=None, info=None, policy=None)
+                            done=_done, obs_next=None, info=None, policy=None)
                 if self.dam is not None:
                     atk_dam = self.dam(_obs)  # adversarial DAM
                 else:
@@ -195,6 +196,7 @@ class critical_point_attack_collector(Collector):
                 adv_acts = adversarial_policy(batch)
                 # print("Adv actions", adv_acts)
                 # print("Lenght", len(adv_acts))
+            #################################
             if random:  # take random actions
                 action_space = self.env.action_space
                 if isinstance(action_space, list):
@@ -341,6 +343,6 @@ class critical_point_attack_collector(Collector):
             'v/ep': self.episode_speed.get(),
             'rew': reward_sum / n_episode,
             'len': length_sum / n_episode,
-            'atk_rate(%)': n_attacks / cur_step,
+            'atk_rate(%)': self.n / self.n,
             'succ_atks(%)': succ_atk / n_attacks,
         }

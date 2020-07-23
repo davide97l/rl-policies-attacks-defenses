@@ -137,21 +137,19 @@ class strategically_time_attack_collector(Collector):
             min_a = np.amin(prob_a)
             diff = max_a - min_a
             if diff >= self.beta:
+                ori_act = self._act  # get the original actions
+                des_act = np.argmin(prob_a)  # get the desired actions
                 if not self.perfect_attack:
                     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-                    ori_obs = torch.FloatTensor(batch.obs).to(device)  # get the original observations
-                    ori_act = self._act  # get the original actions
-                    ori_act_t = torch.tensor(ori_act).to(device)
-                    adv_obs = self.adv.perturb(ori_obs, ori_act_t)  # create adversarial observations
+                    ori_obs = torch.FloatTensor(batch.obs).to(device)  # get the original  observations
+                    des_act_t = torch.tensor([des_act]).to(device)
+                    adv_obs = self.adv.perturb(ori_obs, des_act_t)  # create adversarial observations
                     y = self.adv.predict(adv_obs)
                     _, adv_actions = torch.max(y, 1)  # predict adversarial actions
                     self._act = adv_actions.cpu().detach().numpy()  # replace original actions with adversarial actions
                 else:
-                    ori_act = self._act
-                    action_shape = self.env.action_space.shape or self.env.action_space.n
-                    while self._act == ori_act:
-                        self._act = [rd.randint(0, np.prod(action_shape)-1)]
-                if self._act != ori_act:
+                    self._act = [des_act]
+                if self._act == des_act:
                     succ_atk += 1
                 n_attacks += 1
             ###########################################

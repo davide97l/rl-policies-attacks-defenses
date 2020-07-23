@@ -126,9 +126,9 @@ class critical_strategy_attack_collector(Collector):
             atk_strategies = [p for p in itertools.product(actions, repeat=self.n)]  # define attack strategies
             init_env = copy.deepcopy(self.env)  # save deep copy of initial env
             env = copy.deepcopy(init_env)
+            ### test standard policy ###
             std_rew = 0  # cumulative reward
             best_acts = []  # actions of the best adversarial policy
-            ### test standard policy ###
             for i in range(self.m):
                 with torch.no_grad():
                     result = self.policy(batch, self.state)
@@ -192,6 +192,7 @@ class critical_strategy_attack_collector(Collector):
                 adv_acts = adversarial_policy(batch)
                 # print("Adv actions", adv_acts)
                 # print("Lenght", len_adv_atk)
+            #################################
             if random:  # take random actions
                 action_space = self.env.action_space
                 if isinstance(action_space, list):
@@ -207,7 +208,8 @@ class critical_strategy_attack_collector(Collector):
             self._act = to_numpy(result.act)
             ##########ADVERSARIAL ATTACK#########
             if len(adv_acts) > 0:
-                n_attacks += 1
+                if len(adv_acts) < self.n:
+                    n_attacks += 1
                 device = 'cuda' if torch.cuda.is_available() else 'cpu'
                 ori_obs = torch.FloatTensor(batch.obs).to(device)  # get the original observations
                 adv_act = adv_acts.pop(0)
@@ -216,7 +218,7 @@ class critical_strategy_attack_collector(Collector):
                     adv_obs = self.adv.perturb(ori_obs, adv_act_t)  # create adversarial observations
                     y = self.adv.predict(adv_obs)
                     _, adv_actions = torch.max(y, 1)  # predict adversarial actions
-                    self._act = adv_actions.cpu().detach().numpy()  # replace original actions with adversarial actions
+                    self._act = adv_actions.cpu().detach().numpy()  # replace original actions with adversarial actions"""
                 else:
                     self._act = [adv_act]
                 if self._act == [adv_act]:
@@ -338,6 +340,6 @@ class critical_strategy_attack_collector(Collector):
             'v/ep': self.episode_speed.get(),
             'rew': reward_sum / n_episode,
             'len': length_sum / n_episode,
-            'atk_rate(%)': n_attacks / cur_step,
+            'atk_rate(%)': self.n / self.m,
             'succ_atks(%)': succ_atk / n_attacks,
         }

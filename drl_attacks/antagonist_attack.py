@@ -140,11 +140,11 @@ class antagonist_attack_collector(Collector):
                 with torch.no_grad():
                     result = self.victim_policy(batch, None)
                 self._act = result.act  # a''
+                if self._act == adv_act and attacked:
+                    succ_atk += 1
             else:
                 succ_atk += 1
                 n_attacks += 1
-            if self._act == adv_act and attacked:
-                succ_atk += 1
             frames_count += 1
             obs_next, self._rew, self._done, self._info = self.env.step(self._act[0])  # s_t+1, r_adv, done
             self._rew = -self._rew
@@ -229,7 +229,7 @@ class antagonist_attack_collector(Collector):
                     cur_episode += 1
                     reward_sum += self.reward[0]
                     length_sum += self.length
-                    print(self.reward)
+                    #print(self.reward)
                     n_attacks_ep = 0
                     self.reward, self.length = 0, 0
                     self.state = None
@@ -262,7 +262,7 @@ class antagonist_attack_collector(Collector):
             'n/st': cur_step,
             'v/st': self.step_speed.get(),
             'v/ep': self.episode_speed.get(),
-            'rew': reward_sum / n_episode,
+            'rew': -reward_sum / n_episode,
             'len': length_sum / n_episode,
             'atk_rate(%)': n_attacks / frames_count,
             'succ_atks(%)': succ_atk / n_attacks,

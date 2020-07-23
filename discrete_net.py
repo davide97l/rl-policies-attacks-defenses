@@ -5,6 +5,9 @@ import torch.nn.functional as F
 
 
 class Net(nn.Module):
+    """Dense network
+    Input: observations
+    Output: actions"""
     def __init__(self, layer_num, state_shape, action_shape=0, device='cpu'):
         super().__init__()
         self.device = device
@@ -27,6 +30,9 @@ class Net(nn.Module):
 
 
 class Actor(nn.Module):
+    """Actor network
+    Input: observations
+    Output: actions"""
     def __init__(self, preprocess_net, action_shape):
         super().__init__()
         self.preprocess = preprocess_net
@@ -39,6 +45,9 @@ class Actor(nn.Module):
 
 
 class Critic(nn.Module):
+    """Dense network
+    Input: observations
+    Output: scalar value"""
     def __init__(self, preprocess_net):
         super().__init__()
         self.preprocess = preprocess_net
@@ -51,8 +60,9 @@ class Critic(nn.Module):
 
 
 class DQN(nn.Module):
-    """Default Tianshou architecture"""
-
+    """Default Tianshou ConvNet architecture
+    Input: observations
+    Output: actions"""
     def __init__(self, h, w, action_shape, device='cpu'):
         super(DQN, self).__init__()
         self.device = device
@@ -85,8 +95,9 @@ class DQN(nn.Module):
 
 
 class DQN2(nn.Module):
-    """Architecture taken from the paper https://arxiv.org/abs/1710.02298 (Rainbow)"""
-
+    """ConvNet architecture from https://arxiv.org/abs/1710.02298 (Rainbow)
+    Input: observations
+    Output: actions"""
     def __init__(self, h, w, action_shape, device='cpu'):
         super(DQN2, self).__init__()
         self.device = device
@@ -125,6 +136,9 @@ class DQN2(nn.Module):
 
 
 class AntagonistNet(nn.Module):
+    """Dense network for antagonist attack
+    Input: observations
+    Output: actions"""
     def __init__(self, layer_num, state_shape, action_shape=0, device='cpu'):
         super().__init__()
         self.device = device
