@@ -11,6 +11,7 @@ from tianshou.policy import BasePolicy
 from tianshou.data import Batch, ReplayBuffer, ListReplayBuffer, to_numpy
 import random as rd
 from tianshou.exploration import BaseNoise
+import torch.nn as nn
 
 
 class strategically_time_attack_collector(Collector):
@@ -149,9 +150,9 @@ class strategically_time_attack_collector(Collector):
             ##########ADVERSARIAL ATTACK#########
             if self.softmax:
                 softmax = nn.Softmax(dim=1)
-                prob_a = softmax(result.logits).numpy()  # distribution over actions
+                prob_a = softmax(result.logits).cpu().detach().numpy()  # distribution over actions
             else:
-                prob_a = result.logits.numpy()
+                prob_a = result.logits.cpu().detach().numpy()
             max_a = np.amax(prob_a)
             min_a = np.amin(prob_a)
             diff = max_a - min_a

@@ -61,6 +61,7 @@ class antagonist_attack_collector(Collector):
         self.perfect_attack = perfect_attack
         self.victim_policy = victim_policy
         self.n = n
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     def collect(self,
                 n_step: int = 0,
@@ -151,8 +152,8 @@ class antagonist_attack_collector(Collector):
             attacked = False
             if not self.perfect_attack:
                 if n_attacks_ep < self.n:
-                    ori_obs = torch.FloatTensor(self.data.obs).to(device)  # get the original observations
-                    adv_act_t = torch.tensor(self.data.act).to(device)
+                    ori_obs = torch.FloatTensor(self.data.obs).to(self.device)  # get the original observations
+                    adv_act_t = torch.tensor(self.data.act).to(self.device)
                     adv_obs = self.adv.perturb(ori_obs, adv_act_t)  # s'_t
                     n_attacks += 1
                     n_attacks_ep += 1
@@ -174,6 +175,8 @@ class antagonist_attack_collector(Collector):
             # step in env
             obs_next, rew, done, info = self.env.step(
                 self.data.act if self._multi_env else self.data.act[0])  # s_t+1, r_adv, done
+
+            rew = -rew  # reward of the adv_agent is the negative of the reward of the victim agent
 
             # move data to self.data
             if not self._multi_env:
