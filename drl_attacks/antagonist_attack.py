@@ -11,6 +11,7 @@ from tianshou.policy import BasePolicy
 from tianshou.data import Batch, ReplayBuffer, ListReplayBuffer, to_numpy
 import random as rd
 from tianshou.exploration import BaseNoise
+import torch.nn as nn
 
 
 class antagonist_attack_collector(Collector):
@@ -23,7 +24,7 @@ class antagonist_attack_collector(Collector):
         :class:`~tianshou.env.BaseVectorEnv` class.
     :param adv: an instance of the :class:`~advertorch.attacks.base.Attack`
         class implementing an image adversarial attack.
-    :param n: int, maximum number of attacks per episode.
+    :param beta: attacks only if max(prob actions) - min(prob actions) >= beta.
     :param perfect_attack: force adversarial attacks on observations to be
         always effective (ignore the ``adv`` param).
     :param buffer: an instance of the :class:`~tianshou.data.ReplayBuffer`
@@ -47,7 +48,7 @@ class antagonist_attack_collector(Collector):
                  victim_policy: BasePolicy,
                  env: Union[gym.Env, BaseVectorEnv],
                  adv: Attack,
-                 n: int = 10,
+                 beta: float = 0.,
                  perfect_attack: bool = False,
                  buffer: Optional[Union[ReplayBuffer, List[ReplayBuffer]]] = None,
                  preprocess_fn: Callable[[Any], Union[dict, Batch]] = None,
@@ -60,8 +61,8 @@ class antagonist_attack_collector(Collector):
         self.adv = adv  # advertorch attack method
         self.perfect_attack = perfect_attack
         self.victim_policy = victim_policy
-        self.n = n
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        self.beta = beta
 
     def collect(self,
                 n_step: int = 0,
@@ -148,10 +149,17 @@ class antagonist_attack_collector(Collector):
                 self.data.act += self._action_noise(self.data.act.shape)
 
             ##########ADVERSARIAL ATTACK#########
+            softmax = nn.Softmax(dim=1)
+            prob_a = softmax(result.logits).cpu().detach().numpy()  # distribution over actions
+            max_a = np.amax(prob_a)
+            min_a = np.amin(prob_a)
+            diff = max_a - min_a
+
             adv_act = self.data.act
             attacked = False
             if not self.perfect_attack:
-                if n_attacks_ep < self.n:
+                # if n_attacks_ep < self.n:
+                if diff >= self.beta:
                     ori_obs = torch.FloatTensor(self.data.obs).to(self.device)  # get the original observations
                     adv_act_t = torch.tensor(self.data.act).to(self.device)
                     adv_obs = self.adv.perturb(ori_obs, adv_act_t)  # s'_t
@@ -159,16 +167,22 @@ class antagonist_attack_collector(Collector):
                     n_attacks_ep += 1
                     attacked = True
                 else:
-                    adv_obs = self.obs  # s'_t
+                    adv_obs = self.data.obs  # s'_t
                 batch = Batch(obs=adv_obs, info=None)
                 with torch.no_grad():
                     result = self.victim_policy(batch, None)
-                self.act = result.act  # a''
-                if self.act == adv_act and attacked:
+                self.data.act = result.act  # a''
+                if self.data.act == adv_act and attacked:
                     succ_atk += 1
             else:
-                succ_atk += 1
-                n_attacks += 1
+                if diff >= self.beta:
+                    succ_atk += 1
+                    n_attacks += 1
+                else:
+                    batch = Batch(obs=self.data.obs, info=None)
+                    with torch.no_grad():
+                        result = self.victim_policy(batch, None)
+                    self.data.act = result.act  # a''
             frames_count += 1
             ####################################
 
