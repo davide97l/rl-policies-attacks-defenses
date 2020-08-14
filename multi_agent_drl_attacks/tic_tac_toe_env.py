@@ -79,6 +79,7 @@ class TicTacToeEnv(MultiAgentEnv):
             self.current_agent = None
 
         if self.current_agent == 2:
+            """this way both agents will believe to be the agent-1"""
             cur_obs = np.array(self.current_board)
             ones = cur_obs == 1
             minus_ones = cur_obs == -1

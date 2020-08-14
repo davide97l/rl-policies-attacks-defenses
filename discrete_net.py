@@ -60,14 +60,15 @@ class Critic(nn.Module):
 
 
 class DQN(nn.Module):
-    """Default Tianshou ConvNet architecture
-    Input: observations
-    Output: actions"""
-    def __init__(self, h, w, action_shape, device='cpu'):
+    """For advanced usage (how to customize the network), please refer to
+    :ref:`build_the_network`.
+    """
+
+    def __init__(self, h, w, d, action_shape, device='cpu'):
         super(DQN, self).__init__()
         self.device = device
 
-        self.conv1 = nn.Conv2d(4, 16, kernel_size=5, stride=2)
+        self.conv1 = nn.Conv2d(d, 16, kernel_size=5, stride=2)
         self.bn1 = nn.BatchNorm2d(16)
         self.conv2 = nn.Conv2d(16, 32, kernel_size=5, stride=2)
         self.bn2 = nn.BatchNorm2d(32)
@@ -84,8 +85,9 @@ class DQN(nn.Module):
         self.head = nn.Linear(512, action_shape)
 
     def forward(self, x, state=None, info={}):
+        r"""x -> Q(x, \*)"""
         if not isinstance(x, torch.Tensor):
-            x = torch.tensor(x, device=self.device, dtype=torch.float)
+            x = torch.tensor(x, device=self.device, dtype=torch.float32)
         x = x.permute(0, 3, 1, 2)
         x = F.relu(self.bn1(self.conv1(x)))
         x = F.relu(self.bn2(self.conv2(x)))
@@ -161,3 +163,11 @@ class AntagonistNet(nn.Module):
         logits = self.actor(output)
         p = self.sigmoid(self.atk_critic(output))
         return logits, p, state
+
+
+if __name__ == '__main__':
+    dims = [1, 84, 84, 4]
+    s1 = torch.FloatTensor(np.random.uniform(size=dims))  # state
+    dqn = DQN2(84, 84, 2)
+    _, _ = dqn(s1)
+
