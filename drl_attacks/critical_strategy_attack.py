@@ -19,7 +19,7 @@ class critical_strategy_attack_collector(Collector):
         class.
     :param env: a ``gym.Env`` environment or an instance of the
         :class:`~tianshou.env.BaseVectorEnv` class.
-    :param adv: an instance of the :class:`~advertorch.attacks.base.Attack`
+    :param obs_adv_atk: an instance of the :class:`~advertorch.attacks.base.Attack`
         class implementing an image adversarial attack. It has to support
         targeted attacks.
     :param n: int, number of attacks in a sequence.
@@ -47,20 +47,19 @@ class critical_strategy_attack_collector(Collector):
     def __init__(self,
                  policy: BasePolicy,
                  env: Union[gym.Env, BaseVectorEnv],
-                 adv: Attack,
+                 obs_adv_atk: Attack,
                  n: int = 3,
                  m: int = None,
                  beta: float = 0.,
                  perfect_attack: bool = False,
                  buffer: Optional[Union[ReplayBuffer, List[ReplayBuffer]]] = None,
                  preprocess_fn: Callable[[Any], Union[dict, Batch]] = None,
-                 stat_size: Optional[int] = 100,
                  action_noise: Optional[BaseNoise] = None,
                  reward_metric: Optional[Callable[[np.ndarray], float]] = None,
                  **kwargs
                  ):
-        super().__init__(policy, env, buffer, preprocess_fn, stat_size, action_noise, reward_metric, **kwargs)
-        self.adv = adv  # advertorch attack method
+        super().__init__(policy, env, buffer, preprocess_fn, action_noise, reward_metric, **kwargs)
+        self.adv = obs_adv_atk  # advertorch attack method
         if not perfect_attack:
             self.adv.targeted = True
         self.n = n
@@ -73,25 +72,26 @@ class critical_strategy_attack_collector(Collector):
         assert beta >= 0, \
             "beta should be >= 0"
         self.perfect_attack = perfect_attack
+        self.action_space = self.env.action_space[0].shape or self.env.action_space[0].n
 
     def collect(self,
                 n_step: int = 0,
                 n_episode: Union[int, List[int]] = 0,
                 random: bool = False,
                 render: Optional[float] = None,
-                log_fn: Optional[Callable[[dict], None]] = None
+                device: str = 'cpu'
                 ) -> Dict[str, float]:
         """Collect a specified number of step or episode.
         :param int n_step: how many steps you want to collect.
-        :param n_episode: how many episodes you want to collect (in each
-            environment).
-        :type n_episode: int or list
+        :param n_episode: how many episodes you want to collect. If it is an
+            int, it means to collect at lease ``n_episode`` episodes; if it is
+            a list, it means to collect exactly ``n_episode[i]`` episodes in
+            the i-th environment
         :param bool random: whether to use random policy for collecting data,
             defaults to ``False``.
         :param float render: the sleep time between rendering consecutive
             frames, defaults to ``None`` (no rendering).
-        :param function log_fn: a function which receives env info, typically
-            for tensorboard logging.
+        :param str device: can be 'cpu' or 'cuda'
         .. note::
             One and only one collection number specification is permitted,
             either ``n_step`` or ``n_episode``.
@@ -107,13 +107,14 @@ class critical_strategy_attack_collector(Collector):
             * ``n_attacks(%)`` ratio of performed attacks over steps.
             * ``succ_atks(%)`` ratio of successful attacks over performed attacks.
         """
-        if not self._multi_env:
-            n_episode = np.sum(n_episode)
-        start_time = time.time()
-        assert sum([(n_step != 0), (n_episode != 0)]) == 1, \
+        assert (n_step and not n_episode) or (not n_step and n_episode), \
             "One and only one collection number specification is permitted!"
-        cur_step, cur_episode = 0, np.zeros(self.env_num)
-        reward_sum, length_sum = 0., 0
+        start_time = time.time()
+        step_count = 0
+        # episode of each environment
+        episode_count = np.zeros(self.env_num)
+        reward_total = 0.0
+        whole_data = Batch()
 
         frames_count = 0  # number of observed frames
         n_attacks = 0  # number of attacks performed
@@ -133,7 +134,7 @@ class critical_strategy_attack_collector(Collector):
             best_acts = []  # actions of the best adversarial policy
             for i in range(self.m):
                 with torch.no_grad():
-                    result = self.policy(batch, None)  ##
+                    result = self.policy(batch, None)
                 act = to_numpy(result.act)
                 obs_next, rew, done, info = env.step(act[0])
                 obs = self._make_batch(obs_next)
@@ -180,7 +181,7 @@ class critical_strategy_attack_collector(Collector):
             return best_acts
 
         while True:
-            if cur_step >= 100000 and cur_episode.sum() == 0:
+            if step_count >= 100000 and episode_count.sum() == 0:
                 warnings.warn(
                     'There are already many steps in an episode. '
                     'You should add a time limitation to your environment!',
@@ -188,30 +189,28 @@ class critical_strategy_attack_collector(Collector):
 
             # restore the state and the input data
             last_state = self.data.state
-            if last_state.is_empty():
+            if isinstance(last_state, Batch) and last_state.is_empty():
                 last_state = None
             self.data.update(state=Batch(), obs_next=Batch(), policy=Batch())
 
             # calculate the next action
             if random:
-                action_space = self.env.action_space
-                if isinstance(action_space, list):
-                    result = Batch(act=[a.sample() for a in action_space])
-                else:
-                    result = Batch(act=self._make_batch(action_space.sample()))
+                spaces = self._action_space
+                result = Batch(
+                    act=[spaces[i].sample() for i in self._ready_env_ids])
             else:
                 with torch.no_grad():
                     result = self.policy(self.data, last_state)
 
-            # convert None to Batch(), since None is reserved for 0-init
             state = result.get('state', Batch())
+            # convert None to Batch(), since None is reserved for 0-init
             if state is None:
                 state = Batch()
-            self.data.state = state
-            if hasattr(result, 'policy'):
-                self.data.policy = to_numpy(result.policy)
+            self.data.update(state=state, policy=result.get('policy', Batch()))
             # save hidden state to policy._state, in order to save into buffer
-            self.data.policy._state = self.data.state
+            if not (isinstance(self.data.state, Batch)
+                    and self.data.state.is_empty()):
+                self.data.policy._state = self.data.state
 
             self.data.act = to_numpy(result.act)
             if self._action_noise is not None:
@@ -245,105 +244,64 @@ class critical_strategy_attack_collector(Collector):
             #####################################
 
             # step in env
-            obs_next, rew, done, info = self.env.step(
-                self.data.act if self._multi_env else self.data.act[0])
-
+            obs_next, rew, done, info = self.env.step(self.data.act)
             # move data to self.data
-            if not self._multi_env:
-                obs_next = self._make_batch(obs_next)
-                rew = self._make_batch(rew)
-                done = self._make_batch(done)
-                info = self._make_batch(info)
-            self.data.obs_next = obs_next
-            self.data.rew = rew
-            self.data.done = done
-            self.data.info = info
+            self.data.update(obs_next=obs_next, rew=rew, done=done, info=info)
 
-            if log_fn:
-                log_fn(info if self._multi_env else info[0])
             if render:
                 self.render()
-                if render > 0:
-                    time.sleep(render)
+                time.sleep(render)
 
             # add data into the buffer
-            self.length += 1
-            self.reward += self.data.rew
             if self.preprocess_fn:
                 result = self.preprocess_fn(**self.data)
                 self.data.update(result)
-            if self._multi_env:  # cache_buffer branch
-                for i in range(self.env_num):
-                    self._cached_buf[i].add(**self.data[i])
-                    if self.data.done[i]:
-                        if n_step != 0 or np.isscalar(n_episode) or \
-                                cur_episode[i] < n_episode[i]:
-                            cur_episode[i] += 1
-                            reward_sum += self.reward[i]
-                            length_sum += self.length[i]
-                            if self._cached_buf:
-                                cur_step += len(self._cached_buf[i])
-                                if self.buffer is not None:
-                                    self.buffer.update(self._cached_buf[i])
-                        self.reward[i], self.length[i] = 0., 0
-                        if self._cached_buf:
-                            self._cached_buf[i].reset()
-                        self._reset_state(i)
-                obs_next = self.data.obs_next
-                if sum(self.data.done):
-                    env_ind = np.where(self.data.done)[0]
-                    obs_reset = self.env.reset(env_ind)
-                    if self.preprocess_fn:
-                        obs_next[env_ind] = self.preprocess_fn(
-                            obs=obs_reset).get('obs', obs_reset)
-                    else:
-                        obs_next[env_ind] = obs_reset
-                self.data.obs_next = obs_next
-                if n_episode != 0:
-                    if isinstance(n_episode, list) and \
-                            (cur_episode >= np.array(n_episode)).all() or \
-                            np.isscalar(n_episode) and \
-                            cur_episode.sum() >= n_episode:
-                        break
-            else:  # single buffer, without cache_buffer
-                if self.buffer is not None:
-                    self.buffer.add(**self.data[0])
-                cur_step += 1
-                if self.data.done[0]:
-                    cur_episode += 1
-                    reward_sum += self.reward[0]
-                    length_sum += self.length[0]
-                    self.reward, self.length = 0., np.zeros(self.env_num)
-                    self.data.state = Batch()
-                    obs_next = self._make_batch(self.env.reset())
-                    if self.preprocess_fn:
-                        obs_next = self.preprocess_fn(obs=obs_next).get(
-                            'obs', obs_next)
-                    self.data.obs_next = obs_next
-                if n_episode != 0 and cur_episode >= n_episode:
+            for j, i in enumerate(self._ready_env_ids):
+                # j is the index in current ready_env_ids
+                # i is the index in all environments
+                self._cached_buf[i].add(**self.data[j])
+                if self.data.done[j]:
+                    if n_step or np.isscalar(n_episode) or \
+                            episode_count[i] < n_episode[i]:
+                        episode_count[i] += 1
+                        reward_total += np.sum(self._cached_buf[i].rew, axis=0)
+                        step_count += len(self._cached_buf[i])
+                        if self.buffer is not None:
+                            self.buffer.update(self._cached_buf[i])
+                    self._cached_buf[i].reset()
+                    self._reset_state(j)
+            obs_next = self.data.obs_next
+            if sum(self.data.done):
+                env_ind_local = np.where(self.data.done)[0]
+                env_ind_global = self._ready_env_ids[env_ind_local]
+                obs_reset = self.env.reset(env_ind_global)
+                if self.preprocess_fn:
+                    obs_next[env_ind_local] = self.preprocess_fn(
+                        obs=obs_reset).get('obs', obs_reset)
+                else:
+                    obs_next[env_ind_local] = obs_reset
+            self.data.obs = obs_next
+            if n_step:
+                if step_count >= n_step:
                     break
-            if n_step != 0 and cur_step >= n_step:
-                break
-            self.data.obs = self.data.obs_next
-        self.data.obs = self.data.obs_next
+            else:
+                if isinstance(n_episode, int) and \
+                        episode_count.sum() >= n_episode:
+                    break
+                if isinstance(n_episode, list) and \
+                        (episode_count >= n_episode).all():
+                    break
 
-        # generate the statistics
-        cur_episode = sum(cur_episode)
+            # generate the statistics
+        episode_count = sum(episode_count)
         duration = max(time.time() - start_time, 1e-9)
-        self.step_speed.add(cur_step / duration)
-        self.episode_speed.add(cur_episode / duration)
-        self.collect_step += cur_step
-        self.collect_episode += cur_episode
+        self.collect_step += step_count
+        self.collect_episode += episode_count
         self.collect_time += duration
-        if isinstance(n_episode, list):
-            n_episode = np.sum(n_episode)
-        else:
-            n_episode = max(cur_episode, 1)
-        reward_sum /= n_episode
-        if np.asanyarray(reward_sum).size > 1:  # non-scalar reward_sum
-            reward_sum = self._rew_metric(reward_sum)
-        if n_attacks == 0:
-            n_attacks = 1e-9  # avoid 0 division
+        # average reward across the number of episodes
+        reward_avg = reward_total / episode_count
+        if np.asanyarray(reward_avg).size > 1:  # non-scalar reward_avg
+            reward_avg = self._rew_metric(reward_avg)
         return {
             'n/ep': cur_episode,
             'n/st': cur_step,
@@ -354,5 +312,5 @@ class critical_strategy_attack_collector(Collector):
             'n_atks': n_attacks / np.sum(n_episode),
             'n_succ_atks': succ_atk / np.sum(n_episode),
             'atk_rate(%)': self.n / self.m,
-            'succ_atks(%)': succ_atk / n_attacks,
+            'succ_atks(%)': succ_atk / n_attacks if n_attacks > 0 else 0,
         }

@@ -1,0 +1,7 @@
+python atari_dqn.py --task "BreakoutNoFrameskip-v4"
+python atari_dqn.py --task "MsPacmanNoFrameskip-v4"
+python atari_dqn.py --task "PongNoFrameskip-v4"
+python atari_dqn.py --task "SpaceInvadersNoFrameskip-v4"
+
+python atari_dqn.py --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --watch --test_num 10 --task "PongNoFrameskip-v4"
+python atari_dqn.py --resume_path "log/MsPacmanNoFrameskip-v4/dqn/policy.pth" --watch --test_num 10 --task "MsPacmanNoFrameskip-v4"
