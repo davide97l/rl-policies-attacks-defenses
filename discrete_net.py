@@ -6,6 +6,7 @@ import torch.nn.functional as F
 
 class Net(nn.Module):
     """Dense network
+    only used for simple environments
     Input: observations
     Output: actions"""
     def __init__(self, layer_num, state_shape, action_shape=0, device='cpu'):
@@ -29,6 +30,50 @@ class Net(nn.Module):
         return logits, state
 
 
+class ConvNet(nn.Module):
+    """Convolutional network.
+    same as DQN, but output layer is removed, used as pre-processing network for Actor-Critic policies
+    Input: observations
+    Output: actions"""
+    def __init__(self, d, h, w, device='cpu'):
+        super(ConvNet, self).__init__()
+        self.device = device
+
+        def conv2d_size_out(size, kernel_size=5, stride=2):
+            return (size - (kernel_size - 1) - 1) // stride + 1
+
+        def conv2d_layers_size_out(size,
+                                   kernel_size_1=8, stride_1=4,
+                                   kernel_size_2=4, stride_2=2,
+                                   kernel_size_3=3, stride_3=1):
+            size = conv2d_size_out(size, kernel_size_1, stride_1)
+            size = conv2d_size_out(size, kernel_size_2, stride_2)
+            size = conv2d_size_out(size, kernel_size_3, stride_3)
+            return size
+
+        convw = conv2d_layers_size_out(w)
+        convh = conv2d_layers_size_out(h)
+        linear_input_size = convw * convh * 64
+
+        self.net = nn.Sequential(
+            nn.Conv2d(d, 32, kernel_size=8, stride=4),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(32, 64, kernel_size=4, stride=2),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1),
+            nn.ReLU(inplace=True),
+            nn.Flatten(),
+            nn.Linear(linear_input_size, 512),
+            nn.Linear(512, 128)
+        )
+
+    def forward(self, x, state=None, info={}):
+        r"""x -> Q(x, \*)"""
+        if not isinstance(x, torch.Tensor):
+            x = torch.tensor(x, device=self.device, dtype=torch.float32)
+        return self.net(x), state
+
+
 class Actor(nn.Module):
     """Actor network
     Input: observations
@@ -36,7 +81,7 @@ class Actor(nn.Module):
     def __init__(self, preprocess_net, action_shape):
         super().__init__()
         self.preprocess = preprocess_net
-        self.last = nn.Linear(128, np.prod(action_shape))
+        self.last = nn.Linear(128, action_shape)
 
     def forward(self, s, state=None, info={}):
         logits, h = self.preprocess(s, state)
@@ -104,47 +149,6 @@ class DQN(nn.Module):
         return self.net(x), state
 
 
-class DQN2(nn.Module):
-    """ConvNet architecture from https://arxiv.org/abs/1710.02298 (Rainbow)
-    Input: observations
-    Output: actions"""
-    def __init__(self, h, w, action_shape, device='cpu'):
-        super(DQN2, self).__init__()
-        self.device = device
-
-        self.conv1 = nn.Conv2d(4, 32, kernel_size=8, stride=4)
-        self.bn1 = nn.BatchNorm2d(32)
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=4, stride=2)
-        self.bn2 = nn.BatchNorm2d(64)
-        self.conv3 = nn.Conv2d(64, 64, kernel_size=3, stride=1)
-        self.bn3 = nn.BatchNorm2d(64)
-
-        def conv2d_size_out(size, kernel_size=3, stride=1):
-            return (size - (kernel_size - 1) - 1) // stride + 1
-
-        convw = conv2d_size_out(conv2d_size_out(conv2d_size_out(w,
-                                                                kernel_size=8, stride=4),
-                                                kernel_size=4, stride=2),
-                                kernel_size=3, stride=1)
-        convh = conv2d_size_out(conv2d_size_out(conv2d_size_out(h,
-                                                                kernel_size=8, stride=4),
-                                                kernel_size=4, stride=2),
-                                kernel_size=3, stride=1)
-        linear_input_size = convw * convh * 64
-        self.fc = nn.Linear(linear_input_size, 512)
-        self.head = nn.Linear(512, action_shape)
-
-    def forward(self, x, state=None, info={}):
-        if not isinstance(x, torch.Tensor):
-            x = torch.tensor(x, device=self.device, dtype=torch.float)
-        x = x.permute(0, 3, 1, 2)
-        x = F.relu(self.bn1(self.conv1(x)))
-        x = F.relu(self.bn2(self.conv2(x)))
-        x = F.relu(self.bn3(self.conv3(x)))
-        x = self.fc(x.reshape(x.size(0), -1))
-        return self.head(x), state
-
-
 class AntagonistNet(nn.Module):
     """Dense network for antagonist attack
     Input: observations
@@ -171,11 +175,3 @@ class AntagonistNet(nn.Module):
         logits = self.actor(output)
         p = self.sigmoid(self.atk_critic(output))
         return logits, p, state
-
-
-if __name__ == '__main__':
-    dims = [1, 84, 84, 4]
-    s1 = torch.FloatTensor(np.random.uniform(size=dims))  # state
-    dqn = DQN2(84, 84, 2)
-    _, _ = dqn(s1)
-

@@ -2,6 +2,14 @@ python atari_dqn.py --task "BreakoutNoFrameskip-v4"
 python atari_dqn.py --task "MsPacmanNoFrameskip-v4"
 python atari_dqn.py --task "PongNoFrameskip-v4"
 python atari_dqn.py --task "SpaceInvadersNoFrameskip-v4"
+python atari_dqn.py --task "EnduroNoFrameskip-v4"
+
 
 python atari_dqn.py --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --watch --test_num 10 --task "PongNoFrameskip-v4"
 python atari_dqn.py --resume_path "log/MsPacmanNoFrameskip-v4/dqn/policy.pth" --watch --test_num 10 --task "MsPacmanNoFrameskip-v4"
+python atari_dqn.py --resume_path "log/SpaceInvadersNoFrameskip-v4/dqn/policy.pth" --watch --test_num 10 --task "SpaceInvadersNoFrameskip-v4"
+python atari_dqn.py --resume_path "log/EnduroNoFrameskip-v4/dqn/policy.pth" --watch --test_num 10 --task "EnduroNoFrameskip-v4"
+python atari_dqn.py --resume_path "log/BreakoutNoFrameskip-v4/dqn/policy.pth" --watch --test_num 10 --task "BreakoutNoFrameskip-v4"
+
+python atari_a2c.py --task "PongNoFrameskip-v4" --device "cuda:1"
+
