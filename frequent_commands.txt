@@ -12,4 +12,6 @@ python atari_dqn.py --resume_path "log/EnduroNoFrameskip-v4/dqn/policy.pth" --wa
 python atari_dqn.py --resume_path "log/BreakoutNoFrameskip-v4/dqn/policy.pth" --watch --test_num 10 --task "BreakoutNoFrameskip-v4"
 
 python atari_a2c.py --task "PongNoFrameskip-v4" --device "cuda:1"
+python atari_a2c.py --task "PongNoFrameskip-v4" --device "cuda:1" --collect_per_step 100 --step_per_epoch 1000 --repeat-per-collect 2 --buffer-size 1000
+
 

@@ -21,10 +21,9 @@ def get_args():
     parser.add_argument('--eps_test', type=float, default=0.005)
     parser.add_argument('--eps_train', type=float, default=0.5)
     parser.add_argument('--eps_train_final', type=float, default=0.05)
-    parser.add_argument('--buffer-size', type=int, default=100000)
+    parser.add_argument('--buffer-size', type=int, default=1000)
     parser.add_argument('--lr', type=float, default=0.0001)
     parser.add_argument('--gamma', type=float, default=0.99)
-    parser.add_argument('--n_step', type=int, default=3)
     parser.add_argument('--target_update_freq', type=int, default=100)
     parser.add_argument('--epoch', type=int, default=100)
     parser.add_argument('--step_per_epoch', type=int, default=10000)
@@ -44,7 +43,7 @@ def get_args():
                         help='watch the play of pre-trained policy only')
     parser.add_argument('--vf-coef', type=float, default=0.5)
     parser.add_argument('--ent-coef', type=float, default=0.01)
-    parser.add_argument('--max-grad-norm', type=float, default=None)
+    parser.add_argument('--max-grad-norm', type=float, default=40)
     args = parser.parse_known_args()[0]
     return args
 
@@ -123,8 +122,6 @@ def test_a2c(args=get_args()):
         watch()
         exit(0)
 
-    # test train_collector and start filling replay buffer
-    train_collector.collect(n_step=args.batch_size * 4)
     # trainer
     result = onpolicy_trainer(
         policy, train_collector, test_collector, args.epoch,
