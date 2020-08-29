@@ -1,1 +1,3 @@
-# adversarial_attacks_DRL
+# Tianshou-adversarial_attacks
+
+29/08/2020: This project is currenlty under early stage development...
