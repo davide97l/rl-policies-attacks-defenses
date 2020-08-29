@@ -23,11 +23,7 @@ class uniform_attack_collector:
         self.policy = policy
         self.env = env
         self.obs_adv_atk = obs_adv_atk  # advertorch attack method
-        self.atk_frequency = atk_frequency
-        assert 0 <= atk_frequency <= 1, \
-            "atk_frequency should be included between 0 and 1"
-        self.atk_frequency = atk_frequency
-        self.atk_frames = int(1 / atk_frequency)
+        self.change_frequency(atk_frequency)
         self.perfect_attack = perfect_attack
         self.action_space = self.env.action_space.shape or self.env.action_space.n
         self.data = Batch(state={}, obs={}, act={}, rew={}, done={}, info={},
@@ -36,6 +32,15 @@ class uniform_attack_collector:
 
     def reset_env(self):
         self.data.obs = self.env.reset()
+
+    def change_frequency(self, freq):
+        assert 0 <= freq <= 1, \
+            "atk_frequency should be included between 0 and 1"
+        self.atk_frequency = freq
+        if freq == 0:
+            self.atk_frames = np.inf
+        else:
+            self.atk_frames = int(1 / self.atk_frequency)
 
     def collect(self,
                 n_step: int = 0,

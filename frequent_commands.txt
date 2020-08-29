@@ -3,6 +3,8 @@ python atari_dqn.py --task "MsPacmanNoFrameskip-v4"
 python atari_dqn.py --task "PongNoFrameskip-v4"
 python atari_dqn.py --task "SpaceInvadersNoFrameskip-v4"
 python atari_dqn.py --task "EnduroNoFrameskip-v4"
+python atari_dqn.py --task "QbertNoFrameskip-v4"
+python atari_dqn.py --task "SeaquestNoFrameskip-v4"
 
 
 python atari_dqn.py --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --watch --test_num 10 --task "PongNoFrameskip-v4"
@@ -13,5 +15,14 @@ python atari_dqn.py --resume_path "log/BreakoutNoFrameskip-v4/dqn/policy.pth" --
 
 python atari_a2c.py --task "PongNoFrameskip-v4" --device "cuda:1"
 python atari_a2c.py --task "PongNoFrameskip-v4" --device "cuda:1" --collect_per_step 100 --step_per_epoch 1000 --repeat-per-collect 2 --buffer-size 1000
+python atari_a2c.py --task "PongNoFrameskip-v4" --device "cuda:1" --repeat-per-collect 2 --collect_per_step 10 --logdir "log2"
+python atari_a2c.py --task "PongNoFrameskip-v4" --device "cuda:1" --collect_per_step 10 --step_per_epoch 1000 --repeat-per-collect 2 --buffer-size 100000 --num_training 64
+python atari_a2c.py --task "PongNoFrameskip-v4" --device "cuda:1" --collect_per_step 10 --step_per_epoch 1000 --repeat-per-collect 2 --buffer-size 100000 --num_training 64 --max-grad-norm 0.5
+
+python atari_dqn.py --task "BreakoutNoFrameskip-v4" --buffer-size 1000000 --n_step 3 --target_update_freq 300
+python atari_dqn.py --task "MsPacmanNoFrameskip-v4" --buffer-size 1000000 --n_step 3 --target_update_freq 300
+
+
+
 
 

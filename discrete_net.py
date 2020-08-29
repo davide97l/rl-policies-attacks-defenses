@@ -63,8 +63,8 @@ class ConvNet(nn.Module):
             nn.Conv2d(64, 64, kernel_size=3, stride=1),
             nn.ReLU(inplace=True),
             nn.Flatten(),
-            nn.Linear(linear_input_size, 512),
-            nn.Linear(512, 128)
+            nn.Linear(linear_input_size, 512)
+            #nn.Linear(512, 128)
         )
 
     def forward(self, x, state=None, info={}):
@@ -81,7 +81,7 @@ class Actor(nn.Module):
     def __init__(self, preprocess_net, action_shape):
         super().__init__()
         self.preprocess = preprocess_net
-        self.last = nn.Linear(128, action_shape)
+        self.last = nn.Linear(512, action_shape)
 
     def forward(self, s, state=None, info={}):
         logits, h = self.preprocess(s, state)
@@ -96,7 +96,7 @@ class Critic(nn.Module):
     def __init__(self, preprocess_net):
         super().__init__()
         self.preprocess = preprocess_net
-        self.last = nn.Linear(128, 1)
+        self.last = nn.Linear(512, 1)
 
     def forward(self, s):
         logits, h = self.preprocess(s, None)
