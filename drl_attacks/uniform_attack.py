@@ -154,3 +154,7 @@ class uniform_attack_collector:
             'atk_rate(%)': self.atk_frequency,
             'succ_atks(%)': succ_atk / n_attacks if n_attacks > 0 else 0,
         }
+
+
+if __name__ == '__main__':
+    uniform_attack_collector(get_args())

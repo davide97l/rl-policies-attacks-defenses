@@ -27,9 +27,13 @@ python atari_dqn.py --task "MsPacmanNoFrameskip-v4" --buffer-size 1000000 --n_st
 
 BENCHMARK
 Pong DQN perfect attack
-python atari_uniform_attack --task "PongNoFrameskip-v4" --eps_test 0.005  --gamma 0.99 --n_step 3 --perfect_attack --policy dqn --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth"
+python atari_uniform_attack.py --task "PongNoFrameskip-v4" --eps_test 0.005  --gamma 0.99 --n_step 3 --perfect_attack --policy "dqn" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth"
+python atari_uniform_attack_benchmark.py --task "PongNoFrameskip-v4" --eps_test 0.005  --gamma 0.99 --n_step 3 --perfect_attack --policy "dqn" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --test_num 100
 Pong DQN fgsm
-python atari_uniform_attack --task "PongNoFrameskip-v4" --eps_test 0.005  --gamma 0.99 --n_step 3 --image_attack "fgsm" --policy dqn --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth"
+python atari_uniform_attack.py --task "PongNoFrameskip-v4" --eps_test 0.005  --gamma 0.99 --n_step 3 --image_attack "fgsm" --policy "dqn" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth"
+python atari_uniform_attack_benchmark.py --task "PongNoFrameskip-v4" --eps_test 0.005  --gamma 0.99 --n_step 3 --policy "dqn" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --test_num 100 --eps 0.1
+python atari_uniform_attack_benchmark.py --task "PongNoFrameskip-v4" --eps_test 0.005  --gamma 0.99 --n_step 3 --policy "dqn" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --test_num 100 --eps 0.2
+python atari_uniform_attack_benchmark.py --task "PongNoFrameskip-v4" --eps_test 0.005  --gamma 0.99 --n_step 3 --policy "dqn" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --test_num 100 --eps 0.3
 
 
 
