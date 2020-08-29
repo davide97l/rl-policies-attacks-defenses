@@ -8,11 +8,20 @@ import numpy as np
 from typing import Any, Dict, List, Union, Optional, Callable
 
 from tianshou.policy import BasePolicy
-from tianshou.data import Batch, ReplayBuffer, ListReplayBuffer, to_numpy
+from tianshou.data import Batch, to_numpy
 
 
 class uniform_attack_collector:
-
+    """
+    :param policy: an instance of the :class:`~tianshou.policy.BasePolicy`
+        class.
+    :param env: a ``gym.Env`` environment or an instance of the
+        :class:`~tianshou.env.BaseVectorEnv` class.
+    :param obs_adv_atk: an instance of the :class:`~advertorch.attacks.base.Attack`
+        class implementing an image adversarial attack.
+    :param perfect_attack: force adversarial attacks on observations to be
+        always effective (ignore the ``adv`` param).
+    """
     def __init__(self,
                  policy: BasePolicy,
                  env: gym.Env,
