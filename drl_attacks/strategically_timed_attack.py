@@ -1,5 +1,4 @@
 from advertorch.attacks.base import Attack
-import random as rd
 import gym
 import time
 import torch
