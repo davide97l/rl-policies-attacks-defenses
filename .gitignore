@@ -129,5 +129,4 @@ dmypy.json
 .pyre/
 
 .idea
-frequent_commands.txt
-benchmark.xlsx
+log_2/

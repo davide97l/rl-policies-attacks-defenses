@@ -49,7 +49,7 @@ class uniform_attack_collector:
         if freq == 0:
             self.atk_frames = np.inf
         else:
-            self.atk_frames = int(1 / self.atk_frequency)
+            self.atk_frames = int(1. / self.atk_frequency)
 
     def collect(self,
                 n_step: int = 0,

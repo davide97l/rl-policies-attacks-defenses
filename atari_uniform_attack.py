@@ -8,20 +8,19 @@ from drl_attacks.uniform_attack import uniform_attack_collector
 from atari_wrapper import wrap_deepmind
 from tianshou.env import SubprocVectorEnv
 from tianshou.data import Collector, ReplayBuffer
-from utils import NetAdapter, make_dqn, make_a2c
+from utils import NetAdapter, make_policy, make_img_adv_attack
 
 
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', type=str, default='PongNoFrameskip-v4')
     parser.add_argument('--seed', type=int, default=0)
-    parser.add_argument('--eps_test', type=float, default=0.005)
     parser.add_argument('--gamma', type=float, default=0.99)
     parser.add_argument('--n_step', type=int, default=3)  # only dqn
     parser.add_argument('--vf-coef', type=float, default=0.5)  # only a2c and ppo
     parser.add_argument('--ent-coef', type=float, default=0.01)  # only a2c and ppo
     parser.add_argument('--max-grad-norm', type=float, default=0.5)  # only a2c and ppo
-    parser.add_argument('--target_update_freq', type=int, default=100)
+    parser.add_argument('--target_update_freq', type=int, default=500)
     parser.add_argument('--test_num', type=int, default=10)
     parser.add_argument('--render', type=float, default=0.)
     parser.add_argument(
@@ -35,6 +34,8 @@ def get_args():
     parser.add_argument('--perfect_attack', default=False, action='store_true')
     parser.add_argument('--eps', type=float, default=0.3)  # fgsm and cw
     parser.add_argument('--iterations', type=int, default=100)  # only cw
+    parser.add_argument('--target_policy_path', type=str, default=None)  # log_2/PongNoFrameskip-v4/dqn/policy.pth
+    parser.add_argument('--target_policy', type=str, default=None)  # dqn, a2c, ppo
     parser.add_argument('--test_random', default=False, action='store_true')
     parser.add_argument('--test_normal', default=False, action='store_true')
     args = parser.parse_known_args()[0]
@@ -47,10 +48,6 @@ def make_atari_env_watch(args):
 
 
 def test_adversarial_policy(args=get_args()):
-    image_attack = ["fgsm", "cw"]
-    victim_policy = ["dqn", "a2c", "ppo"]
-    assert args.image_attack in image_attack or args.perfect_attack
-    assert args.policy in victim_policy
     env = make_atari_env_watch(args)
     args.state_shape = env.observation_space.shape or env.observation_space.n
     args.action_shape = env.env.action_space.shape or env.env.action_space.n
@@ -59,25 +56,17 @@ def test_adversarial_policy(args=get_args()):
     print("Actions shape: ", args.action_shape)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
-    if args.policy == "dqn":
-        policy, model = make_dqn(args)
-    if args.policy == "a2c":
-        policy, model = make_a2c(args)
-    if args.resume_path:
-        policy.load_state_dict(torch.load(args.resume_path))
-        print("Loaded agent from: ", args.resume_path)
-    policy.eval()
+    # make policy
+    policy, model = make_policy(args, args.policy, args.resume_path)
+    # make target policy
+    if args.target_policy is not None:
+        _, model = make_policy(args, args.target_policy, args.target_policy_path)
     # define victim policy
     adv_net = NetAdapter(copy.deepcopy(model)).to(args.device)
     adv_net.eval()
     # define observations adversarial attack
-    obs_adv_atk = None
-    if args.image_attack == 'fgsm':
-        obs_adv_atk = GradientSignAttack(adv_net, eps=args.eps)
-    if args.image_attack == 'cw':
-        obs_adv_atk = CarliniWagnerL2Attack(adv_net, args.action_shape,
-                                            confidence=0.1,
-                                            max_iterations=args.iterations)
+    obs_adv_atk, atk_type = make_img_adv_attack(args, adv_net, targeted=False)
+
     # make envs
     envs = SubprocVectorEnv([lambda: make_atari_env_watch(args)
                              for _ in range(args.test_num)])

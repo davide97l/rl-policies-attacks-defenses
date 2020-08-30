@@ -1,3 +1,4 @@
+TRAINING DQN
 python atari_dqn.py --task "BreakoutNoFrameskip-v4"
 python atari_dqn.py --task "MsPacmanNoFrameskip-v4"
 python atari_dqn.py --task "PongNoFrameskip-v4"
@@ -6,13 +7,14 @@ python atari_dqn.py --task "EnduroNoFrameskip-v4"
 python atari_dqn.py --task "QbertNoFrameskip-v4"
 python atari_dqn.py --task "SeaquestNoFrameskip-v4"
 
+TESTING DQN
+python atari_dqn.py --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --watch --test_num 100 --task "PongNoFrameskip-v4"
+python atari_dqn.py --resume_path "log/MsPacmanNoFrameskip-v4/dqn/policy.pth" --watch --test_num 100 --task "MsPacmanNoFrameskip-v4"
+python atari_dqn.py --resume_path "log/SpaceInvadersNoFrameskip-v4/dqn/policy.pth" --watch --test_num 100 --task "SpaceInvadersNoFrameskip-v4"
+python atari_dqn.py --resume_path "log/EnduroNoFrameskip-v4/dqn/policy.pth" --watch --test_num 100 --task "EnduroNoFrameskip-v4"
+python atari_dqn.py --resume_path "log/BreakoutNoFrameskip-v4/dqn/policy.pth" --watch --test_num 100 --task "BreakoutNoFrameskip-v4"
 
-python atari_dqn.py --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --watch --test_num 10 --task "PongNoFrameskip-v4"
-python atari_dqn.py --resume_path "log/MsPacmanNoFrameskip-v4/dqn/policy.pth" --watch --test_num 10 --task "MsPacmanNoFrameskip-v4"
-python atari_dqn.py --resume_path "log/SpaceInvadersNoFrameskip-v4/dqn/policy.pth" --watch --test_num 10 --task "SpaceInvadersNoFrameskip-v4"
-python atari_dqn.py --resume_path "log/EnduroNoFrameskip-v4/dqn/policy.pth" --watch --test_num 10 --task "EnduroNoFrameskip-v4"
-python atari_dqn.py --resume_path "log/BreakoutNoFrameskip-v4/dqn/policy.pth" --watch --test_num 10 --task "BreakoutNoFrameskip-v4"
-
+TRAINING A2C
 python atari_a2c.py --task "PongNoFrameskip-v4" --device "cuda:1"
 python atari_a2c.py --task "PongNoFrameskip-v4" --device "cuda:1" --collect_per_step 100 --step_per_epoch 1000 --repeat-per-collect 2 --buffer-size 1000
 python atari_a2c.py --task "PongNoFrameskip-v4" --device "cuda:1" --repeat-per-collect 2 --collect_per_step 10 --logdir "log2"
@@ -21,20 +23,15 @@ python atari_a2c.py --task "PongNoFrameskip-v4" --device "cuda:1" --collect_per_
 python atari_a2c.py --task "PongNoFrameskip-v4" --device "cuda:1" --collect_per_step 100 --step_per_epoch 1000 --repeat-per-collect 2 --buffer-size 100000 --num_training 64 --max-grad-norm 0.5
 python atari_a2c.py --task "PongNoFrameskip-v4" --device "cuda:1" --collect_per_step 1000 --step_per_epoch 1000 --repeat-per-collect 2 --buffer-size 100000 --num_training 64 --max-grad-norm 0.5
 
-python atari_dqn.py --task "BreakoutNoFrameskip-v4" --buffer-size 1000000 --n_step 3 --target_update_freq 300
-python atari_dqn.py --task "MsPacmanNoFrameskip-v4" --buffer-size 1000000 --n_step 3 --target_update_freq 300
-
-
 BENCHMARK
-Pong DQN perfect attack
-python atari_uniform_attack.py --task "PongNoFrameskip-v4" --eps_test 0.005  --gamma 0.99 --n_step 3 --perfect_attack --policy "dqn" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth"
-python atari_uniform_attack_benchmark.py --task "PongNoFrameskip-v4" --eps_test 0.005  --gamma 0.99 --n_step 3 --perfect_attack --policy "dqn" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --test_num 100
-Pong DQN fgsm
-python atari_uniform_attack.py --task "PongNoFrameskip-v4" --eps_test 0.005  --gamma 0.99 --n_step 3 --image_attack "fgsm" --policy "dqn" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth"
-python atari_uniform_attack_benchmark.py --task "PongNoFrameskip-v4" --eps_test 0.005  --gamma 0.99 --n_step 3 --policy "dqn" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --test_num 100 --eps 0.1
-python atari_uniform_attack_benchmark.py --task "PongNoFrameskip-v4" --eps_test 0.005  --gamma 0.99 --n_step 3 --policy "dqn" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --test_num 100 --eps 0.2
-python atari_uniform_attack_benchmark.py --task "PongNoFrameskip-v4" --eps_test 0.005  --gamma 0.99 --n_step 3 --policy "dqn" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --test_num 100 --eps 0.3
-
+- Pong DQN uniform attack transferability policy
+python atari_uniform_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --perfect_attack --target_policy_path "log_2/PongNoFrameskip-v4/dqn/policy.pth" --target_policy "dqn"
+- Pong DQN uniform attack
+python atari_uniform_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --perfect_attack
+- Pong DQN strategically timed attack transferability policy
+python atari_strategically_timed_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --perfect_attack --target_policy_path "log_2/PongNoFrameskip-v4/dqn/policy.pth" --target_policy "dqn"
+- Pong DQN strategically timed attack
+python atari_strategically_timed_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --perfect_attack
 
 
 

@@ -2,3 +2,5 @@ tianshou
 advertorch
 gym
 opencv-python
+numpy
+matplotlib

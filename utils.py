@@ -1,7 +1,8 @@
 import torch.nn as nn
 import torch
-from discrete_net import DQN, ConvNet, Actor, Critic
+from net.discrete_net import DQN, ConvNet, Actor, Critic
 from tianshou.policy import DQNPolicy, A2CPolicy
+from advertorch.attacks import *
 
 
 class NetAdapter(nn.Module):
@@ -21,7 +22,7 @@ def make_dqn(args):
               args.action_shape, args.device).to(args.device)
     policy = DQNPolicy(net, None, args.gamma, args.n_step,
                        target_update_freq=args.target_update_freq)
-    policy.set_eps(args.eps_test)
+    policy.set_eps(0)
     return policy, policy.model
 
 
@@ -35,3 +36,32 @@ def make_a2c(args):
         ent_coef=args.ent_coef, max_grad_norm=args.max_grad_norm,
         target_update_freq=args.target_update_freq)
     return policy, policy.actor
+
+
+def make_policy(args, policy_type, resume_path):
+    assert policy_type in ["dqn", "a2c", "ppo"]
+    policy, model = None, None
+    if policy_type == "dqn":
+        policy, model = make_dqn(args)
+    if policy_type == "a2c":
+        policy, model = make_a2c(args)
+    if resume_path:
+        policy.load_state_dict(torch.load(resume_path))
+        print("Loaded agent from: ", resume_path)
+    policy.eval()
+    return policy, model
+
+
+def make_img_adv_attack(args, adv_net, targeted=False):
+    assert args.image_attack in ["fgsm", "cw"] or args.perfect_attack
+    obs_adv_atk, atk_type = None, None
+    if args.perfect_attack:
+        atk_type = "perfect_attack"
+    elif args.image_attack == 'fgsm':
+        obs_adv_atk = GradientSignAttack(adv_net, eps=args.eps, targeted=targeted)
+        atk_type = "fgsm_eps_" + str(args.eps)
+    elif args.image_attack == 'cw':
+        obs_adv_atk = CarliniWagnerL2Attack(adv_net, args.action_shape, confidence=0.1,
+                                            max_iterations=args.iterations, targeted=targeted)
+        atk_type = "cw_it_" + str(args.iterations)
+    return obs_adv_atk, atk_type
