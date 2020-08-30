@@ -96,7 +96,7 @@ class uniform_attack_collector:
             self.data.act = to_numpy(result.act)
 
             ##########ADVERSARIAL ATTACK#########
-            if frames_count % self.atk_frames == 0:
+            if frames_count % self.atk_frames == 0 and frames_count > 0:
                 if not self.perfect_attack:
                     ori_obs = torch.FloatTensor(self.data.obs).to(device)  # get the original observations
                     ori_act = self.data.act  # get the original actions
