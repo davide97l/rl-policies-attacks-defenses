@@ -1,2 +1,4 @@
 tianshou
 advertorch
+gym
+opencv-python
