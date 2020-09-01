@@ -13,6 +13,7 @@ python atari_dqn.py --resume_path "log/MsPacmanNoFrameskip-v4/dqn/policy.pth" --
 python atari_dqn.py --resume_path "log/SpaceInvadersNoFrameskip-v4/dqn/policy.pth" --watch --test_num 100 --task "SpaceInvadersNoFrameskip-v4"
 python atari_dqn.py --resume_path "log/EnduroNoFrameskip-v4/dqn/policy.pth" --watch --test_num 100 --task "EnduroNoFrameskip-v4"
 python atari_dqn.py --resume_path "log/BreakoutNoFrameskip-v4/dqn/policy.pth" --watch --test_num 100 --task "BreakoutNoFrameskip-v4"
+python atari_dqn.py --resume_path "log/QbertNoFrameskip-v4/dqn/policy.pth" --watch --test_num 100 --task "QbertNoFrameskip-v4"
 
 TRAINING A2C
 python atari_a2c.py --task "PongNoFrameskip-v4" --device "cuda:1"

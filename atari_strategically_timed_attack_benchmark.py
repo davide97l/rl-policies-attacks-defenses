@@ -33,8 +33,8 @@ def get_args():
     parser.add_argument('--logdir', type=str, default='log')
     parser.add_argument('--target_policy_path', type=str, default=None)  # log_2/PongNoFrameskip-v4/dqn/policy.pth
     parser.add_argument('--target_policy', type=str, default=None)  # dqn, a2c, ppo
-    parser.add_argument('--min', type=float, default=0.)
-    parser.add_argument('--max', type=float, default=1.)
+    parser.add_argument('--min', type=float, default=0.2)
+    parser.add_argument('--max', type=float, default=0.4)
     parser.add_argument('--steps', type=int, default=21)
     parser.add_argument('--no_softmax', default=True, action='store_false')
     args = parser.parse_known_args()[0]
@@ -74,7 +74,7 @@ def benchmark_adversarial_policy(args=get_args()):
     # define adversarial collector
     collector = strategically_timed_attack_collector(policy, env, obs_adv_atk,
                                                      perfect_attack=args.perfect_attack)
-    beta = np.linspace(0., 0.1, 21, endpoint=True)
+    beta = np.linspace(args.min, args.max, args.steps, endpoint=True)
     atk_freq = []
     n_attacks = []
     rewards = []
@@ -87,7 +87,7 @@ def benchmark_adversarial_policy(args=get_args()):
         print("attack frequency =", atk_freq[-1], "| n_attacks =", n_attacks[-1], "| reward: ", rewards[-1])
         # pprint.pprint(test_adversarial_policy)
     log_path = os.path.join(args.logdir, args.task, args.policy,
-                            "uniform_attack_" + atk_type + transferability_type + ".npy")
+                            "strategically_timed_attack_" + atk_type + transferability_type + ".npy")
     with open(log_path, 'wb') as f:
         np.save(f, atk_freq)
         np.save(f, n_attacks)

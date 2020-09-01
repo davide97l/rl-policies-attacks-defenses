@@ -5,7 +5,7 @@ import numpy as np
 task = "Pong"
 model = "dqn"
 img_attack = "perfect_attack"
-rl_attack = "uniform_attack"
+rl_attack = "strategically_timed_attack"  # strategically_timed_attack, uniform_attack
 input_file = ["log/" + task + "NoFrameskip-v4/" + model + "/" + rl_attack + "_" + img_attack + ".npy"]
 
 atk_freq = []
@@ -19,6 +19,16 @@ for file in input_file:
         n_attacks.append(np.load(f))
         rewards.append(np.load(f))
     i += 1
+
+
+def sort_pivot(list1, list2):
+    """Sort list1, then sort list 2 according to list1"""
+    ind = np.argsort(list1)
+    list1 = np.take_along_axis(list1, ind, axis=0)
+    list2 = np.take_along_axis(list2, ind, axis=0)
+    return list1, list2
+
+atk_freq[0], rewards[0] = sort_pivot(atk_freq[0], rewards[0])
 
 print("Attack frequencies:", atk_freq[0])
 print("Rewards:", rewards[0])
