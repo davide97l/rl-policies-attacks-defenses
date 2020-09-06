@@ -1,4 +1,4 @@
-from net.discrete_net import *
+from net.discrete_net import DenseNet, ConvNet, Actor, Critic, DQN
 
 
 __all__ = [

@@ -87,5 +87,5 @@ def test_adversarial_policy(args=get_args()):
     collector = uniform_attack_collector(policy, env, obs_adv_atk,
                                          atk_frequency=args.attack_freq,
                                          perfect_attack=args.perfect_attack)
-    test_adversarial_policy = collector.collect(n_episode=args.test_num)
+    test_adversarial_policy = collector.collect(n_episode=args.test_num, device=args.device)
     pprint.pprint(test_adversarial_policy)

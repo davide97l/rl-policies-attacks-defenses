@@ -28,7 +28,7 @@ def get_args():
     parser.add_argument('--image_attack', type=str, default='fgsm')  # fgsm, cw
     parser.add_argument('--policy', type=str, default='dqn')  # dqn, a2c, ppo
     parser.add_argument('--perfect_attack', default=False, action='store_true')
-    parser.add_argument('--eps', type=float, default=0.1)
+    parser.add_argument('--eps', type=float, default=0.3)
     parser.add_argument('--iterations', type=int, default=100)
     parser.add_argument('--logdir', type=str, default='log')
     parser.add_argument('--target_policy_path', type=str, default=None)  # log_2/PongNoFrameskip-v4/dqn/policy.pth
@@ -66,6 +66,7 @@ def benchmark_adversarial_policy(args=get_args()):
     adv_net.eval()
     # define observations adversarial attack
     obs_adv_atk, atk_type = make_img_adv_attack(args, adv_net, targeted=False)
+    print("Attack type:", atk_type)
 
     # define adversarial collector
     collector = uniform_attack_collector(policy, env, obs_adv_atk,
@@ -75,10 +76,13 @@ def benchmark_adversarial_policy(args=get_args()):
     rewards = []
     for f in atk_freq:
         collector.change_frequency(f)
-        test_adversarial_policy = collector.collect(n_episode=args.test_num)
+        test_adversarial_policy = collector.collect(n_episode=args.test_num, device=args.device)
+        atk_freq_ = test_adversarial_policy['atk_rate(%)']
         rewards.append(test_adversarial_policy['rew'])
         n_attacks.append(test_adversarial_policy['n_atks'])
-        print("attack frequency =", f, "| n_attacks =", n_attacks[-1], "| reward: ", rewards[-1])
+        print("attack frequency =", atk_freq_, "| n_attacks =", n_attacks[-1],
+              "| n_succ_atks (%)", test_adversarial_policy['succ_atks(%)'],
+              "| reward: ", rewards[-1])
         # pprint.pprint(test_adversarial_policy)
     log_path = os.path.join(args.logdir, args.task, args.policy,
                             "uniform_attack_" + atk_type + transferability_type + ".npy")
