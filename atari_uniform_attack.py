@@ -65,8 +65,7 @@ def test_adversarial_policy(args=get_args()):
     adv_net = NetAdapter(copy.deepcopy(model)).to(args.device)
     adv_net.eval()
     # define observations adversarial attack
-    obs_adv_atk, atk_type = make_img_adv_attack(args, adv_net, targeted=False)
-
+    obs_adv_atk, atk_type = make_img_adv_attack(args, adv_net)
     # make envs
     envs = SubprocVectorEnv([lambda: make_atari_env_watch(args)
                              for _ in range(args.test_num)])

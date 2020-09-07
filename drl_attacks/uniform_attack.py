@@ -26,14 +26,17 @@ class uniform_attack_collector(base_attack_collector):
                  env: gym.Env,
                  obs_adv_atk: Attack,
                  perfect_attack: bool = False,
+                 device: str = 'cuda' if torch.cuda.is_available() else 'cpu',
                  atk_frequency: float = 1.
                  ):
-        super(base_attack_collector, self).__init__(
-            policy, env, obs_adv_atk, perfect_attack)
+        super().__init__(
+            policy, env, obs_adv_atk, perfect_attack, device)
 
         self.atk_frequency = None
         self.atk_frames = None
         self.change_frequency(atk_frequency)
+        if self.obs_adv_atk is not None:
+            self.obs_adv_atk.targeted = False
 
     def change_frequency(self, freq):
         assert 0 <= freq <= 1, \
@@ -67,7 +70,7 @@ class uniform_attack_collector(base_attack_collector):
             if self.frames_count % self.atk_frames == 0 and self.frames_count > 0:
                 ori_act = self.data.act
                 if not self.perfect_attack:
-                    self.obs_adv_atk()
+                    self.obs_attacks(ori_act)
                 else:
                     while self.data.act == ori_act:
                         self.data.act = [rd.randint(0, self.action_space - 1)]

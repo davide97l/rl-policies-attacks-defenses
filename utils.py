@@ -18,6 +18,8 @@ class NetAdapter(nn.Module):
 
 
 def make_dqn(args):
+    """Make a DQN policy
+    :return: policy, actor network"""
     net = DQN(*args.state_shape,
               args.action_shape, args.device).to(args.device)
     policy = DQNPolicy(net, None, args.gamma, args.n_step,
@@ -27,6 +29,8 @@ def make_dqn(args):
 
 
 def make_a2c(args):
+    """Make a A2C policy
+    :return: policy, actor network"""
     net = ConvNet(*args.state_shape, args.device).to(args.device)
     actor = Actor(net, args.action_shape).to(args.device)
     critic = Critic(net).to(args.device)
@@ -39,6 +43,8 @@ def make_a2c(args):
 
 
 def make_policy(args, policy_type, resume_path):
+    """Make a 'policy_type' policy
+    :return: policy, actor network"""
     assert policy_type in ["dqn", "a2c", "ppo"]
     policy, model = None, None
     if policy_type == "dqn":
@@ -52,16 +58,18 @@ def make_policy(args, policy_type, resume_path):
     return policy, model
 
 
-def make_img_adv_attack(args, adv_net, targeted=False):
-    assert args.image_attack in ["fgsm", "cw"] or args.perfect_attack
+def make_img_adv_attack(args, adv_net, min_pixel=0., max_pixel=255.):
+    assert args.image_attack in ["fgm", "cw"] or args.perfect_attack
     obs_adv_atk, atk_type = None, None
     if args.perfect_attack:
         atk_type = "perfect_attack"
-    elif args.image_attack == 'fgsm':
-        obs_adv_atk = GradientSignAttack(adv_net, eps=args.eps, targeted=targeted)
-        atk_type = "fgsm_eps_" + str(args.eps)
+    elif args.image_attack == 'fgm':
+        obs_adv_atk = GradientAttack(adv_net, eps=args.eps*max_pixel,
+                                     clip_min=min_pixel, clip_max=max_pixel)
+        atk_type = "fgm_eps_" + str(args.eps)
     elif args.image_attack == 'cw':
         obs_adv_atk = CarliniWagnerL2Attack(adv_net, args.action_shape, confidence=0.1,
-                                            max_iterations=args.iterations, targeted=targeted)
-        atk_type = "cw_it_" + str(args.iterations)
+                                            max_iterations=args.iterations,
+                                            clip_min=min_pixel, clip_max=max_pixel)
+        atk_type = "cw_iter_" + str(args.iterations)
     return obs_adv_atk, atk_type

@@ -103,14 +103,16 @@ class base_attack_collector:
         """
         Predicts the next action given observation 'self.data.obs' and policy 'self.policy',
         and stores it in 'self.data.act'
+        :return: outcome of policy forward pass
         """
         with torch.no_grad():
             self.data.obs = np.expand_dims(self.data.obs, axis=0)
             result = self.policy(self.data, last_state=None)
         self.data.act = to_numpy(result.act)
+        return result
 
     def obs_attacks(self,
-                    target_action: int,
+                    target_action: Optional[list[int]] = None,
                     ):
         """
         Performs an image adversarial attack on the observation stored in 'self.data.obs' respect to
@@ -119,6 +121,8 @@ class base_attack_collector:
                 - if obs_adv_atk.targeted=False, then 'target_action' must be the normal action.
                 - if obs_adv_atk.targeted=True, then 'target_action' must be the adversarial action.
         """
+        if not target_action:
+            target_action = self.data.act
         obs = torch.FloatTensor(self.data.obs).to(self.device)  # convert observation to tensor
         act = torch.tensor(target_action).to(self.device)  # convert action to tensor
         adv_obs = self.obs_adv_atk.perturb(obs, act)  # create adversarial observation

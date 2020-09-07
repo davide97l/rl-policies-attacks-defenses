@@ -26,13 +26,13 @@ python atari_a2c.py --task "PongNoFrameskip-v4" --device "cuda:1" --collect_per_
 
 BENCHMARK
 - Pong DQN uniform attack transferability policy
-python atari_uniform_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --target_policy_path "log_2/PongNoFrameskip-v4/dqn/policy.pth" --target_policy "dqn"
+python atari_uniform_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --target_policy_path "log_2/PongNoFrameskip-v4/dqn/policy.pth" --target_policy "dqn" --eps 0.3
 - Pong DQN uniform attack
-python atari_uniform_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --perfect_attack
+python atari_uniform_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --eps 0.3 --perfect_attack
 - Pong DQN strategically timed attack transferability policy
-python atari_strategically_timed_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --target_policy_path "log_2/PongNoFrameskip-v4/dqn/policy.pth" --target_policy "dqn"
+python atari_strategically_timed_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --target_policy_path "log_2/PongNoFrameskip-v4/dqn/policy.pth" --target_policy "dqn" --eps 0.3
 - Pong DQN strategically timed attack
-python atari_strategically_timed_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --perfect_attack
+python atari_strategically_timed_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --eps 0.3 --perfect_attack
 
 
 
