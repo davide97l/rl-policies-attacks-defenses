@@ -60,10 +60,7 @@ def benchmark_adversarial_policy(args=get_args()):
     transferability_type = ""
     if args.target_policy is not None:
         _, model = make_policy(args, args.target_policy, args.target_policy_path)
-        if args.target_policy == args.policy:
-            transferability_type = "_transf_policy"
-        else:
-            transferability_type = "_transf_algorithm"
+        transferability_type = "_transf_" + str(args.target_policy)
     # define victim policy
     adv_net = NetAdapter(copy.deepcopy(model)).to(args.device)
     adv_net.eval()
@@ -73,13 +70,15 @@ def benchmark_adversarial_policy(args=get_args()):
 
     # define adversarial collector
     collector = uniform_attack_collector(policy, env, obs_adv_atk,
-                                         perfect_attack=args.perfect_attack)
+                                         perfect_attack=args.perfect_attack,
+                                         device=args.device
+                                         )
     atk_freq = np.linspace(args.min, args.max, args.steps, endpoint=True)
     n_attacks = []
     rewards = []
     for f in atk_freq:
-        collector.change_frequency(f)
-        test_adversarial_policy = collector.collect(n_episode=args.test_num, device=args.device)
+        collector.atk_frequency = f
+        test_adversarial_policy = collector.collect(n_episode=args.test_num)
         atk_freq_ = test_adversarial_policy['atk_rate(%)']
         rewards.append(test_adversarial_policy['rew'])
         n_attacks.append(test_adversarial_policy['n_atks'])

@@ -4,7 +4,7 @@ import numpy as np
 # Data
 task = "Pong"
 model = "dqn"
-img_attack = "perfect_attack"
+img_attack = "fgm_eps_0.3"  # fgm_eps_0.3, perfect_attack. fgm_eps_0.05
 rl_attack = "strategically_timed_attack"  # strategically_timed_attack, uniform_attack
 input_file = ["log/" + task + "NoFrameskip-v4/" + model + "/" + rl_attack + "_" + img_attack + ".npy"]
 

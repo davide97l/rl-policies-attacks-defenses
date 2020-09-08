@@ -5,10 +5,10 @@ import numpy as np
 task = "Pong"
 model = "dqn"
 transfer_model = "dqn"
-img_attack = "perfect_attack"
-rl_attack = "uniform_attack"
+img_attack = "fgm_eps_0.3"  # fgm_eps_0.05, perfect_attack, fgm_eps_0.3
+rl_attack = "strategically_timed_attack"  # strategically_timed_attack, uniform_attack
 input_file = ["log/" + task + "NoFrameskip-v4/" + model + "/" + rl_attack + "_" + img_attack + ".npy",
-              "log/" + task + "NoFrameskip-v4/" + model + "/" + rl_attack + "_" + img_attack + "_transfer_"
+              "log/" + task + "NoFrameskip-v4/" + model + "/" + rl_attack + "_" + img_attack + "_transf_"
               + transfer_model + ".npy"]
 
 atk_freq = []

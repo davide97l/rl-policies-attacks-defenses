@@ -7,7 +7,8 @@ from tianshou.data import Batch, to_numpy
 import numpy as np
 import time
 import warnings
-from typing import Dict
+from typing import Dict, List
+import copy
 
 
 class base_attack_collector:
@@ -112,7 +113,7 @@ class base_attack_collector:
         return result
 
     def obs_attacks(self,
-                    target_action: Optional[list[int]] = None,
+                    target_action: Optional[List[int]] = None,
                     ):
         """
         Performs an image adversarial attack on the observation stored in 'self.data.obs' respect to
@@ -126,15 +127,16 @@ class base_attack_collector:
         obs = torch.FloatTensor(self.data.obs).to(self.device)  # convert observation to tensor
         act = torch.tensor(target_action).to(self.device)  # convert action to tensor
         adv_obs = self.obs_adv_atk.perturb(obs, act)  # create adversarial observation
-        y = self.obs_adv_atk.predict(adv_obs)  # predict adversarial action
-        _, adv_action = torch.max(y, 1)  # choose adversarial action
-        self.data.act = adv_action.cpu().detach().numpy()
+        with torch.no_grad():
+            data = copy.deepcopy(self.data)
+            data.obs = adv_obs.cpu().detach().numpy()
+            result = self.policy(data, last_state=None)
+        self.data.act = to_numpy(result.act)
 
     def collect(self,
                 n_step: int = 0,
                 n_episode: int = 0,
-                render: Optional[float] = None,
-                **kwargs
+                render: Optional[float] = None
                 ) -> Dict[str, float]:
         """
         :param int n_step: how many steps you want to collect.

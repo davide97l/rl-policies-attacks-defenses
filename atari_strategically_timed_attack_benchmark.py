@@ -36,7 +36,7 @@ def get_args():
     parser.add_argument('--min', type=float, default=0.2)
     parser.add_argument('--max', type=float, default=0.4)
     parser.add_argument('--steps', type=int, default=21)
-    parser.add_argument('--no_softmax', default=True, action='store_false')
+    parser.add_argument('--no_softmax', default=False, action='store_true')
     args = parser.parse_known_args()[0]
     return args
 
@@ -61,10 +61,7 @@ def benchmark_adversarial_policy(args=get_args()):
     transferability_type = ""
     if args.target_policy is not None:
         _, model = make_policy(args, args.target_policy, args.target_policy_path)
-        if args.target_policy == args.policy:
-            transferability_type = "_transf_policy"
-        else:
-            transferability_type = "_transf_algorithm"
+        transferability_type = "_transf_" + str(args.target_policy)
     # define victim policy
     adv_net = NetAdapter(copy.deepcopy(model)).to(args.device)
     adv_net.eval()
@@ -75,14 +72,15 @@ def benchmark_adversarial_policy(args=get_args()):
     # define adversarial collector
     collector = strategically_timed_attack_collector(policy, env, obs_adv_atk,
                                                      perfect_attack=args.perfect_attack,
-                                                     softmax=False if args.no_softmax else True)
+                                                     softmax=False if args.no_softmax else True,
+                                                     device=args.device)
     beta = np.linspace(args.min, args.max, args.steps, endpoint=True)
     atk_freq = []
     n_attacks = []
     rewards = []
-    for beta in beta:
-        collector.beta = beta
-        test_adversarial_policy = collector.collect(n_episode=args.test_num, device=args.device)
+    for b in beta:
+        collector.beta = b
+        test_adversarial_policy = collector.collect(n_episode=args.test_num)
         rewards.append(test_adversarial_policy['rew'])
         atk_freq.append(test_adversarial_policy['atk_rate(%)'])
         n_attacks.append(test_adversarial_policy['n_atks'])

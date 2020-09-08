@@ -32,26 +32,14 @@ class uniform_attack_collector(base_attack_collector):
         super().__init__(
             policy, env, obs_adv_atk, perfect_attack, device)
 
-        self.atk_frequency = None
-        self.atk_frames = None
-        self.change_frequency(atk_frequency)
+        self.atk_frequency = atk_frequency
         if self.obs_adv_atk is not None:
             self.obs_adv_atk.targeted = False
-
-    def change_frequency(self, freq):
-        assert 0 <= freq <= 1, \
-            "atk_frequency should be included between 0 and 1"
-        self.atk_frequency = freq
-        if freq == 0:
-            self.atk_frames = np.inf
-        else:
-            self.atk_frames = int(1. / self.atk_frequency)
 
     def collect(self,
                 n_step: int = 0,
                 n_episode: int = 0,
-                render: Optional[float] = None,
-                device: str = 'cuda' if torch.cuda.is_available() else 'cpu'
+                render: Optional[float] = None
                 ) -> Dict[str, float]:
 
         assert (n_step and not n_episode) or (not n_step and n_episode), \
@@ -67,7 +55,8 @@ class uniform_attack_collector(base_attack_collector):
             self.predict_next_action()
 
             # START ADVERSARIAL ATTACK
-            if self.frames_count % self.atk_frames == 0 and self.frames_count > 0:
+            x = rd.uniform(0, 1)
+            if x < self.atk_frequency:
                 ori_act = self.data.act
                 if not self.perfect_attack:
                     self.obs_attacks(ori_act)

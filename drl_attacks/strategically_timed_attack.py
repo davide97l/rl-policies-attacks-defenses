@@ -45,8 +45,7 @@ class strategically_timed_attack_collector(base_attack_collector):
     def collect(self,
                 n_step: int = 0,
                 n_episode: int = 0,
-                render: Optional[float] = None,
-                device: str = 'cuda' if torch.cuda.is_available() else 'cpu'
+                render: Optional[float] = None
                 ) -> Dict[str, float]:
 
         assert (n_step and not n_episode) or (not n_step and n_episode), \
@@ -63,7 +62,7 @@ class strategically_timed_attack_collector(base_attack_collector):
 
             # START ADVERSARIAL ATTACK
             if self.softmax:
-                softmax = nn.Softmax(dim=1)
+                softmax = nn.Softmax(dim=-1)
                 prob_a = softmax(result.logits).cpu().detach().numpy()  # distribution over actions
             else:
                 prob_a = result.logits.cpu().detach().numpy()  # action logits
@@ -71,7 +70,7 @@ class strategically_timed_attack_collector(base_attack_collector):
             min_a = np.amin(prob_a)
             diff = max_a - min_a
             if diff >= self.beta:
-                target_act = [np.argmin(prob_a)]  # get the desired action
+                target_act = [int(np.argmin(prob_a))]  # get the desired action
                 if not self.perfect_attack:
                     self.obs_attacks(target_act)
                 else:
