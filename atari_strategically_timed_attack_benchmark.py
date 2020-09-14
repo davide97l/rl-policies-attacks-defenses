@@ -66,7 +66,7 @@ def benchmark_adversarial_policy(args=get_args()):
     adv_net = NetAdapter(copy.deepcopy(model)).to(args.device)
     adv_net.eval()
     # define observations adversarial attack
-    obs_adv_atk, atk_type = make_img_adv_attack(args, adv_net)
+    obs_adv_atk, atk_type = make_img_adv_attack(args, adv_net, targeted=True)
     print("Attack type:", atk_type)
 
     # define adversarial collector

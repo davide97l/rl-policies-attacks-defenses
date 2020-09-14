@@ -23,6 +23,17 @@ for file in input_file:
         rewards.append(np.load(f))
     i += 1
 
+def sort_pivot(list1, list2):
+    """Sort list1, then sort list 2 according to list1"""
+    ind = np.argsort(list1)
+    list1 = np.take_along_axis(list1, ind, axis=0)
+    list2 = np.take_along_axis(list2, ind, axis=0)
+    return list1, list2
+
+f = atk_freq[0]
+atk_freq[0], rewards[0] = sort_pivot(f, rewards[0])
+atk_freq[0], rewards[1] = sort_pivot(f, rewards[1])
+
 print("Attack frequencies:", atk_freq[0])
 print("Rewards:", rewards[0], rewards[1])
 
