@@ -14,7 +14,7 @@ from tianshou.exploration import BaseNoise
 import torch.nn as nn
 
 
-class antagonist_attack_collector(Collector):
+class adversarial_policy_attack_collector(Collector, base_attack_collector):
     """
     :param policy: an instance of the :class:`~tianshou.policy.BasePolicy`
         class. Policy defining the adversarial strategy.

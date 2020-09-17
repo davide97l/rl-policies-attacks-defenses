@@ -34,8 +34,8 @@ def get_args():
     parser.add_argument('--target_policy_path', type=str, default=None)  # log_2/PongNoFrameskip-v4/dqn/policy.pth
     parser.add_argument('--target_policy', type=str, default=None)  # dqn, a2c, ppo
     parser.add_argument('--min', type=float, default=0.2)
-    parser.add_argument('--max', type=float, default=0.4)
-    parser.add_argument('--steps', type=int, default=21)
+    parser.add_argument('--max', type=float, default=0.3)
+    parser.add_argument('--steps', type=int, default=11)
     parser.add_argument('--no_softmax', default=False, action='store_true')
     args = parser.parse_known_args()[0]
     return args
