@@ -27,6 +27,12 @@ class critical_strategy_attack_collector(base_attack_collector):
         sequence respect to the standard sequence.
     :param acts_mask: list(int), contains a subset of actions to use during the
         exploration of the adversarial policies
+    :param repeat_adv_act: int, during the process of searching for some adversarial strategies,
+        repeat each adversarial action ``repeat_adv_act`` times. This will reduce the number of total
+        action combinations to try but could influence the performance of the attack. Setting this
+        parameter != 1 will cause m = m * repeat_adv_act and n = n * repeat_adv_act.
+    :param atari: specify whether ``env`` is an Atari game (True) or not (False), this parameters is
+        used by the functions store_env_state and load_env_state in order to assume different behaviors
     """
 
     def __init__(self,
@@ -35,16 +41,18 @@ class critical_strategy_attack_collector(base_attack_collector):
                  obs_adv_atk: Attack,
                  perfect_attack: bool = False,
                  device: str = 'cuda' if torch.cuda.is_available() else 'cpu',
-                 n: int = 3,
+                 n: int = 5,
                  m: int = None,
                  delta: float = 0.,
-                 acts_mask: List[int] = None
+                 acts_mask: List[int] = None,
+                 repeat_adv_act: int = 1,
+                 atari: bool = True
                  ):
         super().__init__(
             policy, env, obs_adv_atk, perfect_attack, device)
 
         if self.obs_adv_atk is not None:
-            self.obs_adv_atk.targeted = False
+            self.obs_adv_atk.targeted = True
         self.n = int(n)
         if not m:
             m = int(n)
@@ -54,7 +62,31 @@ class critical_strategy_attack_collector(base_attack_collector):
         self.delta = delta
         assert delta >= 0, \
             "delta should be >= 0"
-        self.acts_mask = [3, 4]  # acts_mask
+        self.acts_mask = acts_mask
+        self.repeat_adv_act = repeat_adv_act
+        assert repeat_adv_act >= 1, \
+            "repeat_adv_act should be >= 1"
+        self.m *= self.repeat_adv_act
+        self.n *= self.repeat_adv_act
+        self.env_state = None
+        self.atari = atari
+
+    def store_env_state(self, env):
+        """Copy the state of env in self.env_state"""
+        if not self.atari:
+            self.env_state = copy.deepcopy(env)
+        else:
+            # store state of atari env
+            self.env_state = env.ale.cloneState()
+
+    def load_env_state(self, env):
+        """Copy the state of self.env_state in env and return it"""
+        if not self.atari:
+            env = self.env_state
+        else:
+            # load state of atari env
+            env.ale.restoreState(self.env_state)
+        return env
 
     def adversarial_policy(self, batch):
         """Find an adversarial policy (return the standard policy if can't find better policies).
@@ -63,11 +95,15 @@ class critical_strategy_attack_collector(base_attack_collector):
         batch.obs = np.squeeze(batch.obs, axis=0)
         action_shape = self.env.action_space.shape or self.env.action_space.n
         action_shape = np.prod(action_shape)
-        actions = [a for a in range(int(action_shape)) if a in self.acts_mask]
-        atk_strategies = [p for p in itertools.product(actions, repeat=self.n)]  # define attack strategies
-        env = copy.deepcopy(self.env)
-        snap = self.env.ale.cloneState()#!!!
-        env.ale.restoreState(snap)#!!!
+        if self.acts_mask:
+            actions = [a for a in range(int(action_shape)) if a in self.acts_mask]
+        else:
+            actions = [a for a in range(int(action_shape)) if a in self.acts_mask]
+        atk_strategies = [p for p in itertools.product(actions, repeat=self.n // self.repeat_adv_act)]  # define attack strategies
+        atk_strategies = np.repeat(atk_strategies, self.repeat_adv_act, axis=-1)
+        env = copy.deepcopy(self.env)  # copy the environment
+        self.store_env_state(self.env)  # store the state of the environment
+        env = self.load_env_state(env)  # restore the state of the environment
         adv_acts = []  # actions of the best adversarial policy
         # test standard policy
         std_rew = 0  # cumulative reward
@@ -87,8 +123,8 @@ class critical_strategy_attack_collector(base_attack_collector):
         lowest_rew = std_rew  # best adversarial reward
         # test adversarial policies
         for atk in atk_strategies:
-            snap = self.env.ale.cloneState()  # !!!
-            env.ale.restoreState(snap)  # !!!
+            self.store_env_state(self.env)  # store the state of the environment
+            env = self.load_env_state(env)  # restore the state of the environment
             acts = list(atk)
             atk_rew = 0
             for act in acts:  # play n steps according to adversarial policy
@@ -113,9 +149,8 @@ class critical_strategy_attack_collector(base_attack_collector):
             if atk_rew + self.delta < std_rew and atk_rew < lowest_rew:
                 lowest_rew = atk_rew
                 adv_acts = acts
-                print("attack!!!!!!!")
                 attack = True
-        print(std_rew, lowest_rew)
+        # print(std_rew, lowest_rew)
         return adv_acts, attack
 
     def collect(self,
@@ -140,9 +175,9 @@ class critical_strategy_attack_collector(base_attack_collector):
             if self.frames_count % self.m == 0:
                 adv_acts, attack = self.adversarial_policy(self.data)  # define adversarial policy
                 count_n = self.n if attack else 0
-                print("Adv actions", adv_acts)
-                print("Lenght", len(adv_acts))
-                print(self.reward_total)
+                # print("Adv actions", adv_acts)
+                # print("Lenght", len(adv_acts))
+                # print(self.reward_total)
             if len(adv_acts) > 0 and count_n > 0:
                 adv_act = adv_acts.pop(0)
                 if not self.perfect_attack:

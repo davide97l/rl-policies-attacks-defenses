@@ -33,10 +33,10 @@ def get_args():
     parser.add_argument('--logdir', type=str, default='log')
     parser.add_argument('--target_policy_path', type=str, default=None)  # log_2/PongNoFrameskip-v4/dqn/policy.pth
     parser.add_argument('--target_policy', type=str, default=None)  # dqn, a2c, ppo
-    parser.add_argument('--min', type=int, default=1)
-    parser.add_argument('--max', type=int, default=10)
-    parser.add_argument('--steps', type=int, default=11)
+    parser.add_argument('--min', type=int, default=2)
+    parser.add_argument('--max', type=int, default=9)
     parser.add_argument('--delta', type=float, default=0.)
+    parser.add_argument('--repeat_act', type=int, default=2)
     args = parser.parse_known_args()[0]
     return args
 
@@ -77,14 +77,13 @@ def benchmark_adversarial_policy(args=get_args()):
                                                    perfect_attack=args.perfect_attack,
                                                    acts_mask=acts_mask,
                                                    device=args.device)
-    n = np.linspace(args.min, args.max, args.steps, endpoint=True)
-    m = n
+    n_range = list(np.arange(args.min, args.max)) + [args.max]
     atk_freq = []
     n_attacks = []
     rewards = []
-    for n_ in n:
-        collector.n = int(n_)
-        collector.m = int(n_)
+    for n in n_range:
+        collector.n = int(n * args.repeat_act)
+        collector.m = int(n * args.repeat_act)
         test_adversarial_policy = collector.collect(n_episode=args.test_num)
         rewards.append(test_adversarial_policy['rew'])
         atk_freq.append(test_adversarial_policy['atk_rate(%)'])
