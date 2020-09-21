@@ -79,7 +79,7 @@ class base_attack_collector:
                 Warning)
 
     def check_end_attack(self, n_step, n_episode) -> bool:
-        """Returns True when the attacks terminates"""
+        """Returns True when the attack terminates"""
         if n_step:
             if self.frames_count >= n_step:
                 return True

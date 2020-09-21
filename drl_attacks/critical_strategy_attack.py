@@ -70,6 +70,8 @@ class critical_strategy_attack_collector(base_attack_collector):
         self.n *= self.repeat_adv_act
         self.env_state = None
         self.atari = atari
+        self.count_n = 0
+        self.count_m = 0
 
     def store_env_state(self, env):
         """Copy the state of env in self.env_state"""
@@ -153,6 +155,20 @@ class critical_strategy_attack_collector(base_attack_collector):
         # print(std_rew, lowest_rew)
         return adv_acts, attack
 
+    def perform_step(self):
+        """
+        Performs action 'self.data.act' on 'self.env' and store the next observation in 'self.data.obs'
+        """
+        obs_next, rew, done, info = self.env.step(self.data.act[0])
+        self.data.update(obs_next=obs_next, rew=rew, done=done, info=info)
+        self.reward_total += rew
+        if self.data.done:
+            self.episode_count += 1
+            self.reset_env()
+            self.count_n = 0
+            self.count_m = 0
+        self.data.obs = self.data.obs_next
+
     def collect(self,
                 n_step: int = 0,
                 n_episode: int = 0,
@@ -163,6 +179,8 @@ class critical_strategy_attack_collector(base_attack_collector):
             "One and only one collection number specification is permitted!"
         self.reset_env()
         self.reset_attack()
+        self.count_m = 0
+        self.count_n = 0
 
         while True:
             if render:
@@ -172,21 +190,24 @@ class critical_strategy_attack_collector(base_attack_collector):
             self.predict_next_action()
 
             # START ADVERSARIAL ATTACK
-            if self.frames_count % self.m == 0:
+            if self.count_m == 0:
                 adv_acts, attack = self.adversarial_policy(self.data)  # define adversarial policy
-                count_n = self.n if attack else 0
+                self.count_n = len(adv_acts) if attack else 0
+                self.count_m = self.m
                 # print("Adv actions", adv_acts)
                 # print("Lenght", len(adv_acts))
                 # print(self.reward_total)
-            if len(adv_acts) > 0 and count_n > 0:
+            if len(adv_acts) > 0 and self.count_n > 0:
                 adv_act = adv_acts.pop(0)
                 if not self.perfect_attack:
-                    self.obs_attacks(adv_act)
+                    self.obs_attacks([adv_act])
                 else:
                     self.data.act = [adv_act]
                 if self.data.act == adv_act:
                     self.succ_attacks += 1
                 self.n_attacks += 1
+                self.count_n -= 1
+            self.count_m -= 1
             self.frames_count += 1
             # END ADVERSARIAL ATTACK
 

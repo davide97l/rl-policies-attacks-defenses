@@ -34,7 +34,7 @@ def get_args():
     parser.add_argument('--target_policy_path', type=str, default=None)  # log_2/PongNoFrameskip-v4/dqn/policy.pth
     parser.add_argument('--target_policy', type=str, default=None)  # dqn, a2c, ppo
     parser.add_argument('--min', type=int, default=2)
-    parser.add_argument('--max', type=int, default=9)
+    parser.add_argument('--max', type=int, default=5)
     parser.add_argument('--delta', type=float, default=0.)
     parser.add_argument('--repeat_act', type=int, default=2)
     args = parser.parse_known_args()[0]
@@ -78,20 +78,23 @@ def benchmark_adversarial_policy(args=get_args()):
                                                    acts_mask=acts_mask,
                                                    device=args.device)
     n_range = list(np.arange(args.min, args.max)) + [args.max]
+    m_range = [0., 0.25, 0.5, 0.75, 1.]
     atk_freq = []
     n_attacks = []
     rewards = []
     for n in n_range:
-        collector.n = int(n * args.repeat_act)
-        collector.m = int(n * args.repeat_act)
-        test_adversarial_policy = collector.collect(n_episode=args.test_num)
-        rewards.append(test_adversarial_policy['rew'])
-        atk_freq.append(test_adversarial_policy['atk_rate(%)'])
-        n_attacks.append(test_adversarial_policy['n_atks'])
-        print("attack frequency =", atk_freq[-1], "| n_attacks =", n_attacks[-1],
-              "| n_succ_atks (%)", test_adversarial_policy['succ_atks(%)'],
-              "| reward: ", rewards[-1])
-        # pprint.pprint(test_adversarial_policy)
+        for m in m_range:
+            collector.n = int(n * args.repeat_act)
+            collector.m = int(n * args.repeat_act + n * args.repeat_act * m)
+            test_adversarial_policy = collector.collect(n_episode=args.test_num)
+            rewards.append(test_adversarial_policy['rew'])
+            atk_freq.append(test_adversarial_policy['atk_rate(%)'])
+            n_attacks.append(test_adversarial_policy['n_atks'])
+            print("n =", str(int(n * args.repeat_act)), "m =", str(int(n * args.repeat_act + n * args.repeat_act * m)),
+                  "| attack frequency =", atk_freq[-1], "| n_attacks =", n_attacks[-1],
+                  "| n_succ_atks (%)", test_adversarial_policy['succ_atks(%)'],
+                  "| reward: ", rewards[-1])
+            # pprint.pprint(test_adversarial_policy)
     log_path = os.path.join(args.logdir, args.task, args.policy,
                             "strategically_timed_attack_" + atk_type + transferability_type + ".npy")
 
