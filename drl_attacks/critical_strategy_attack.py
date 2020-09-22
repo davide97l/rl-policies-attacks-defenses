@@ -31,8 +31,9 @@ class critical_strategy_attack_collector(base_attack_collector):
         repeat each adversarial action ``repeat_adv_act`` times. This will reduce the number of total
         action combinations to try but could influence the performance of the attack. Setting this
         parameter != 1 will cause m = m * repeat_adv_act and n = n * repeat_adv_act.
-    :param atari: specify whether ``env`` is an Atari game (True) or not (False), this parameters is
+    :param atari: bool, specify whether ``env`` is an Atari game (True) or not (False), this parameters is
         used by the functions store_env_state and load_env_state in order to assume different behaviors
+    :param full_search: bool, if False the adversarial search terminates after the first adversarial policy is found
     """
 
     def __init__(self,
@@ -46,7 +47,8 @@ class critical_strategy_attack_collector(base_attack_collector):
                  delta: float = 0.,
                  acts_mask: List[int] = None,
                  repeat_adv_act: int = 1,
-                 atari: bool = True
+                 atari: bool = True,
+                 full_search: bool = False
                  ):
         super().__init__(
             policy, env, obs_adv_atk, perfect_attack, device)
@@ -72,6 +74,7 @@ class critical_strategy_attack_collector(base_attack_collector):
         self.atari = atari
         self.count_n = 0
         self.count_m = 0
+        self.full_search = full_search
 
     def store_env_state(self, env):
         """Copy the state of env in self.env_state"""
@@ -100,7 +103,7 @@ class critical_strategy_attack_collector(base_attack_collector):
         if self.acts_mask:
             actions = [a for a in range(int(action_shape)) if a in self.acts_mask]
         else:
-            actions = [a for a in range(int(action_shape)) if a in self.acts_mask]
+            actions = [a for a in range(int(action_shape))]
         atk_strategies = [p for p in itertools.product(actions, repeat=self.n // self.repeat_adv_act)]  # define attack strategies
         atk_strategies = np.repeat(atk_strategies, self.repeat_adv_act, axis=-1)
         env = copy.deepcopy(self.env)  # copy the environment
@@ -152,6 +155,8 @@ class critical_strategy_attack_collector(base_attack_collector):
                 lowest_rew = atk_rew
                 adv_acts = acts
                 attack = True
+                if not self.full_search:
+                    return adv_acts, attack
         # print(std_rew, lowest_rew)
         return adv_acts, attack
 

@@ -3,7 +3,7 @@ import torch
 import argparse
 import numpy as np
 import copy
-from drl_attacks.critical_strategy_attack import critical_strategy_attack_collector
+from drl_attacks.critical_point_attack import critical_point_attack_collector
 from atari_wrapper import wrap_deepmind
 from utils import NetAdapter, make_policy, make_img_adv_attack
 
@@ -73,10 +73,10 @@ def benchmark_adversarial_policy(args=get_args()):
     acts_mask = None
     if "Pong" in args.task:
         acts_mask = [3, 4]
-    collector = critical_strategy_attack_collector(policy, env, obs_adv_atk,
-                                                   perfect_attack=args.perfect_attack,
-                                                   acts_mask=acts_mask,
-                                                   device=args.device)
+    collector = critical_point_attack_collector(policy, env, obs_adv_atk,
+                                                perfect_attack=args.perfect_attack,
+                                                acts_mask=acts_mask,
+                                                device=args.device)
     n_range = list(np.arange(args.min, args.max)) + [args.max]
     m_range = [0., 0.25, 0.5, 0.75, 1.]
     atk_freq = []
@@ -96,7 +96,7 @@ def benchmark_adversarial_policy(args=get_args()):
                   "| reward: ", rewards[-1])
             # pprint.pprint(test_adversarial_policy)
     log_path = os.path.join(args.logdir, args.task, args.policy,
-                            "critical_strategy_attack_" + atk_type + transferability_type + ".npy")
+                            "critical_point_attack_" + atk_type + transferability_type + ".npy")
 
     with open(log_path, 'wb') as f:
         np.save(f, atk_freq)
