@@ -37,6 +37,7 @@ def get_args():
     parser.add_argument('--max', type=int, default=4)
     parser.add_argument('--delta', type=float, default=0.)
     parser.add_argument('--repeat_act', type=int, default=2)
+    parser.add_argument('--full_search', default=False, action='store_true')
     args = parser.parse_known_args()[0]
     return args
 

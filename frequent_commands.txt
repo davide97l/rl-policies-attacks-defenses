@@ -8,12 +8,12 @@ python atari_dqn.py --task "QbertNoFrameskip-v4"
 python atari_dqn.py --task "SeaquestNoFrameskip-v4"
 
 TESTING DQN
-python atari_dqn.py --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --watch --test_num 100 --task "PongNoFrameskip-v4"
-python atari_dqn.py --resume_path "log/MsPacmanNoFrameskip-v4/dqn/policy.pth" --watch --test_num 100 --task "MsPacmanNoFrameskip-v4"
-python atari_dqn.py --resume_path "log/SpaceInvadersNoFrameskip-v4/dqn/policy.pth" --watch --test_num 100 --task "SpaceInvadersNoFrameskip-v4"
-python atari_dqn.py --resume_path "log/EnduroNoFrameskip-v4/dqn/policy.pth" --watch --test_num 100 --task "EnduroNoFrameskip-v4"
-python atari_dqn.py --resume_path "log/BreakoutNoFrameskip-v4/dqn/policy.pth" --watch --test_num 100 --task "BreakoutNoFrameskip-v4"
-python atari_dqn.py --resume_path "log/QbertNoFrameskip-v4/dqn/policy.pth" --watch --test_num 100 --task "QbertNoFrameskip-v4"
+python atari_dqn.py --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --watch --test_num 10 --task "PongNoFrameskip-v4"
+python atari_dqn.py --resume_path "log/MsPacmanNoFrameskip-v4/dqn/policy.pth" --watch --test_num 10 --task "MsPacmanNoFrameskip-v4"
+python atari_dqn.py --resume_path "log/SpaceInvadersNoFrameskip-v4/dqn/policy.pth" --watch --test_num 10 --task "SpaceInvadersNoFrameskip-v4"
+python atari_dqn.py --resume_path "log/EnduroNoFrameskip-v4/dqn/policy.pth" --watch --test_num 10 --task "EnduroNoFrameskip-v4"
+python atari_dqn.py --resume_path "log/BreakoutNoFrameskip-v4/dqn/policy.pth" --watch --test_num 10 --task "BreakoutNoFrameskip-v4"
+python atari_dqn.py --resume_path "log/QbertNoFrameskip-v4/dqn/policy.pth" --watch --test_num 10 --task "QbertNoFrameskip-v4"
 
 TRAINING A2C
 python atari_a2c.py --task "PongNoFrameskip-v4" --device "cuda:1"
@@ -30,17 +30,17 @@ python atari_uniform_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_pa
 - Pong DQN uniform attack
 python atari_uniform_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --eps 0.1 --perfect_attack
 - Pong DQN strategically timed attack transferability policy
-python atari_strategically_timed_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --target_policy_path "log_2/PongNoFrameskip-v4/dqn/policy.pth" --target_policy "dqn" --eps 0.3 --min 0.1 --max 0.3 --steps 11
+python atari_strategically_timed_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --target_policy_path "log_2/PongNoFrameskip-v4/dqn/policy.pth" --target_policy "dqn" --eps 0.1 --min 0.1 --max 0.3 --steps 11
 - Pong DQN strategically timed attack
-python atari_strategically_timed_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --eps 0.3 --min 0.1 --max 0.3 --steps 11 --perfect_attack
+python atari_strategically_timed_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --eps 0.3 --min 0.1 --max 0.1 --steps 11 --perfect_attack
 - Pong DQN critical strategy attack transferability policy
 python atari_critical_strategy_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --target_policy_path "log_2/PongNoFrameskip-v4/dqn/policy.pth" --target_policy "dqn" --eps 0.1
 - Pong DQN critical strategy attack
 python atari_critical_strategy_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --eps 0.1 --test_num 3 --perfect_attack
 - Pong DQN critical point attack transferability policy
-python atari_critical_point_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --target_policy_path "log_2/PongNoFrameskip-v4/dqn/policy.pth" --target_policy "dqn" --eps 0.1
+python atari_critical_point_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --target_policy_path "log_2/PongNoFrameskip-v4/dqn/policy.pth" --target_policy "dqn" --full_search --repeat_act 3 --eps 0.1 --test_num 10
 - Pong DQN critical point attack
-python atari_critical_point_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --eps 0.1 --test_num 3 --perfect_attack
+python atari_critical_point_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --full_search --repeat_act 3 --eps 0.1 --test_num 10 --perfect_attack
 
 
 
