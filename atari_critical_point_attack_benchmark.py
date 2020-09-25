@@ -37,6 +37,7 @@ def get_args():
     parser.add_argument('--max', type=int, default=4)
     parser.add_argument('--delta', type=float, default=0.)
     parser.add_argument('--repeat_act', type=int, default=2)
+    parser.add_argument('--full_search', default=False, action='store_true')
     args = parser.parse_known_args()[0]
     return args
 
@@ -76,7 +77,10 @@ def benchmark_adversarial_policy(args=get_args()):
     collector = critical_point_attack_collector(policy, env, obs_adv_atk,
                                                 perfect_attack=args.perfect_attack,
                                                 acts_mask=acts_mask,
-                                                device=args.device)
+                                                device=args.device,
+                                                full_search=args.full_search,
+                                                repeat_adv_act=args.repeat_act
+                                                )
     n_range = list(np.arange(args.min, args.max)) + [args.max]
     m_range = [0., 0.25, 0.5, 0.75, 1.]
     atk_freq = []

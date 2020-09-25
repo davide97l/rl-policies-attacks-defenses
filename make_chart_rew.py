@@ -17,13 +17,15 @@ def smooth(list1, list2, smoothing=4):
     return list_2
 
 
-def limit_lists(list1, x_lists, y_lists):
+def limit_lists(limit_freq, x_lists, y_lists):
     """All the lists in x_lists will be in the same range of list1"""
-    limit = list1[-1]
     n_lists = len(x_lists)
     for i in range(n_lists):
-        x_lists[i] = ([l for l in x_lists[i] if l <= limit])
+        x_lists[i] = ([l for l in x_lists[i] if l <= limit_freq])
+        temp = y_lists[i][-1]
         y_lists[i] = y_lists[i][:len(x_lists[i])]
+        y_lists[i] = np.concatenate([y_lists[i], [temp]])
+        x_lists[i] = np.concatenate([x_lists[i], [limit_freq]])
     return x_lists, y_lists
 
 
@@ -37,11 +39,11 @@ if __name__ == '__main__':
     rl_attack = "critical_strategy_attack"  # strategically_timed_attack, uniform_attack, critical_strategy_attack
     has_atk_freq = 1
     has_n_attacks = 0
-    smoothing = 4
+    smoothing = 2
     input_file = [
         "log/" + task + "NoFrameskip-v4/" + model + "/" + rl_attack + "_" + img_attack + ".npy",
         "log/" + task + "NoFrameskip-v4/" + model + "/" + rl_attack + "_" + img_attack + "_transf_" + transfer_model + ".npy",
-        "log/" + task + "NoFrameskip-v4/" + model + "/" + rl_attack + "_" + "perfect_attack" + ".npy",
+        #"log/" + task + "NoFrameskip-v4/" + model + "/" + rl_attack + "_" + "perfect_attack" + ".npy",
                   ]
 
     n_lines = len(input_file)
@@ -62,24 +64,27 @@ if __name__ == '__main__':
 
     x1_lists = []
     y1_lists = []
+    min_x, min_index = np.inf, 0
     for i in range(n_lines):
         x[i], rewards[i] = sort_pivot(x[i], rewards[i])
         #print("Attack frequencies:", atk_freq[i])
         #print("Rewards:", rewards[i])
         #print("Number attacks:", n_attacks[i])
         rewards[i] = smooth(x[i], rewards[i], smoothing=smoothing)
-        if i > 0:
-            x1_lists.append(x[i])
-            y1_lists.append(rewards[i])
+        x1_lists.append(x[i])
+        y1_lists.append(rewards[i])
+        if i == n_lines-1 and x[i][-1] < min_x:
+            min_x = x[i][-1]
+            min_index = i
 
-    x_lists, y_lists = limit_lists(x[0], x1_lists, y1_lists)
-    for i in range(1, n_lines):
-        x[i] = x_lists[i-1]
-        rewards[i] = y_lists[i-1]
+    x_lists, y_lists = limit_lists(min_x, x1_lists, y1_lists)
+    for i in range(0, n_lines):
+        x[i] = x_lists[i]
+        rewards[i] = y_lists[i]
 
     plt.plot(x[0], rewards[0], label="Policy")
     plt.plot(x[1], rewards[1], label="Transfer Policy")
-    plt.plot(x[2], rewards[2], label="Perfect Attack")
+    #plt.plot(x[2], rewards[2], label="Perfect Attack")
 
     plt.legend(loc='upper right')
 
