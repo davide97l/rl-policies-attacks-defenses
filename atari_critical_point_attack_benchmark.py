@@ -3,7 +3,7 @@ import torch
 import argparse
 import numpy as np
 import copy
-from drl_attacks.critical_point_attack import critical_point_attack_collector
+from drl_attacks.critical_point_attack import *
 from atari_wrapper import wrap_deepmind
 from utils import NetAdapter, make_policy, make_img_adv_attack
 
@@ -72,14 +72,17 @@ def benchmark_adversarial_policy(args=get_args()):
 
     # define adversarial collector
     acts_mask = None
+    dam = None
     if "Pong" in args.task:
         acts_mask = [3, 4]
+        dam = dam_pong
     collector = critical_point_attack_collector(policy, env, obs_adv_atk,
                                                 perfect_attack=args.perfect_attack,
                                                 acts_mask=acts_mask,
                                                 device=args.device,
                                                 full_search=args.full_search,
-                                                repeat_adv_act=args.repeat_act
+                                                repeat_adv_act=args.repeat_act,
+                                                dam=dam
                                                 )
     n_range = list(np.arange(args.min, args.max)) + [args.max]
     m_range = [0., 0.25, 0.5, 0.75, 1.]

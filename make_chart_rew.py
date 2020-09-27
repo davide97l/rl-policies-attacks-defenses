@@ -45,7 +45,6 @@ if __name__ == '__main__':
         "log/" + task + "NoFrameskip-v4/" + model + "/" + rl_attack + "_" + img_attack + "_transf_" + transfer_model + ".npy",
         #"log/" + task + "NoFrameskip-v4/" + model + "/" + rl_attack + "_" + "perfect_attack" + ".npy",
                   ]
-
     n_lines = len(input_file)
     atk_freq = []
     n_attacks = []

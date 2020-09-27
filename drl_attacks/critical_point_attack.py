@@ -1,4 +1,5 @@
 from drl_attacks.critical_strategy_attack import critical_strategy_attack_collector
+from drl_attacks.base_attack import base_attack_collector
 from advertorch.attacks.base import Attack
 import gym
 import time
@@ -88,7 +89,7 @@ class critical_point_attack_collector(critical_strategy_attack_collector):
                 break
             batch = Batch(state={}, obs=obs_next, act={}, rew={}, done={}, info={},
                           obs_next={}, policy={})
-        std_dam = self.dam(batch.obs) if self.dam is not None else rew
+        std_dam = self.dam(batch.obs[-1]) if self.dam is not None else rew
         best_dam = std_dam
         # test adversarial policies
         for atk in atk_strategies:
@@ -112,25 +113,89 @@ class critical_point_attack_collector(critical_strategy_attack_collector):
                         break
                     batch = Batch(state={}, obs=obs_next, act={}, rew={}, done={}, info={},
                                   obs_next={}, policy={})
-            atk_dam = self.dam(batch.obs) if self.dam is not None else rew
-            if atk_dam - self.delta > atk_dam and atk_dam < best_dam:
+            atk_dam = self.dam(batch.obs[-1]) if self.dam is not None else rew
+            if atk_dam - self.delta > std_dam and atk_dam > best_dam:
                 best_dam = atk_dam
                 adv_acts = acts
                 attack = True
                 if not self.full_search:
                     return adv_acts, attack
-        # print(std_dam, lowest_rew)
         return adv_acts, attack
-
-
-def dam_cartpole(obs):
-    obs = obs.reshape(4)
-    return abs(obs[2]*obs[3])  # inclination * angular velocity
 
 
 def dam_pong(obs):
     """
-    :param obs: (84 x 84) numpy array, color 0-255
-    :return: obs dam value
+    :param obs: (84 x 84) numpy array
+    :return: int, pong observation dam value
     """
+    obs = obs.astype(int)
+    ball_obs = obs[14:-7, 11:-11]
+    right_bar_obs = obs[14:-7, -11:]
+    right_bar = 117
+    empty = 87
+
+    try:
+        if not np.all(ball_obs == empty):
+            shape_ball = np.argwhere(ball_obs != empty)
+        else:  # ball already passed left or right bar
+            return np.inf
+        pos_ball = shape_ball[-1]
+        pos_ball_yx = [pos_ball[0], pos_ball[1]]
+        shape_right_bar = np.argwhere(right_bar_obs == right_bar)
+        pos_right_bar = shape_right_bar[len(shape_right_bar) // 2]
+        pos_right_bar_yx = [pos_right_bar[0], pos_right_bar[1]]
+        dam = abs(pos_ball_yx[0] - pos_right_bar_yx[0])
+        return dam
+    except:  # error
+        return 0
+
+
+def dam_pacman(obs):
+    """
+    :param obs: (84 x 84) numpy array
+    :return: int, pacman observation dam value
+    """
+
+
+def dam_enduro(obs):
+    """
+    :param obs: (84 x 84) numpy array
+    :return: int, enduro observation dam value
+    """
+
+
+def dam_breakout(obs):
+    """
+    :param obs: (84 x 84) numpy array
+    :return: int, breakout observation dam value
+    """
+
+    obs = obs.astype(int)[38:78, 5:-5]
+    ball_obs = obs[:36]
+    bar_obs = obs[36:]
+    empty = 0
+
+    try:
+        if not np.all(ball_obs == empty):
+            shape_ball = np.argwhere(ball_obs != empty)
+        else:  # ball already passed the bar
+            return np.inf
+        pos_ball = shape_ball[-1]
+        pos_ball_yx = [pos_ball[0], pos_ball[1]]
+        shape_bar = np.argwhere(bar_obs != empty)
+        pos_bar = shape_bar[len(shape_bar) // 2]
+        pos_bar_yx = [pos_bar[0], pos_bar[1]]
+        dam = abs(pos_ball_yx[1] - pos_bar_yx[1])
+        return dam
+    except:  # error
+        return 0
+
+
+def dam_cartpole(obs):
+    """
+    :param obs: (4,) numpy array
+    :return: int, cartpole observation dam value
+    """
+    obs = obs.reshape(4)
+    return abs(obs[2] * obs[3])  # inclination * angular velocity
 
