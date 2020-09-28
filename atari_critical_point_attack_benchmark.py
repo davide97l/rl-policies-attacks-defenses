@@ -85,7 +85,7 @@ def benchmark_adversarial_policy(args=get_args()):
                                                 dam=dam
                                                 )
     n_range = list(np.arange(args.min, args.max)) + [args.max]
-    m_range = [0., 0.25, 0.5, 0.75, 1.]
+    m_range = [0., 1., 2., 3., 4.]
     atk_freq = []
     n_attacks = []
     rewards = []

@@ -50,7 +50,7 @@ class critical_point_attack_collector(critical_strategy_attack_collector):
                  acts_mask: List[int] = None,
                  repeat_adv_act: int = 1,
                  atari: bool = True,
-                 full_search: bool = False,
+                 full_search: bool = True,
                  dam: Callable = None
                  ):
         super().__init__(
@@ -120,6 +120,7 @@ class critical_point_attack_collector(critical_strategy_attack_collector):
                 attack = True
                 if not self.full_search:
                     return adv_acts, attack
+        #print(std_dam, best_dam)
         return adv_acts, attack
 
 

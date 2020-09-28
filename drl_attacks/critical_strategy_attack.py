@@ -48,7 +48,7 @@ class critical_strategy_attack_collector(base_attack_collector):
                  acts_mask: List[int] = None,
                  repeat_adv_act: int = 1,
                  atari: bool = True,
-                 full_search: bool = False
+                 full_search: bool = True
                  ):
         super().__init__(
             policy, env, obs_adv_atk, perfect_attack, device)

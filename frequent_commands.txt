@@ -40,7 +40,7 @@ python atari_critical_strategy_attack_benchmark.py --task "PongNoFrameskip-v4" -
 - Pong DQN critical point attack transferability policy
 python atari_critical_point_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --target_policy_path "log_2/PongNoFrameskip-v4/dqn/policy.pth" --target_policy "dqn" --full_search --repeat_act 2 --eps 0.1 --test_num 10
 - Pong DQN critical point attack
-python atari_critical_point_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --full_search --repeat_act 3 --eps 0.1 --test_num 10 --perfect_attack
+python atari_critical_point_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --full_search --repeat_act 2 --eps 0.1 --test_num 10 --perfect_attack
 
 
 
