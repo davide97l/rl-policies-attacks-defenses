@@ -151,7 +151,7 @@ class critical_strategy_attack_collector(base_attack_collector):
                         break
                     batch = Batch(state={}, obs=obs_next, act={}, rew={}, done={}, info={},
                                   obs_next={}, policy={})
-            if atk_rew + self.delta < std_rew and atk_rew < lowest_rew:
+            if abs(atk_rew - std_rew) > self.delta and atk_rew < lowest_rew:
                 lowest_rew = atk_rew
                 adv_acts = acts
                 attack = True

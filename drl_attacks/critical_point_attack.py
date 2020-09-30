@@ -114,7 +114,7 @@ class critical_point_attack_collector(critical_strategy_attack_collector):
                     batch = Batch(state={}, obs=obs_next, act={}, rew={}, done={}, info={},
                                   obs_next={}, policy={})
             atk_dam = self.dam(batch.obs[-1]) if self.dam is not None else rew
-            if atk_dam - self.delta > std_dam and atk_dam > best_dam:
+            if abs(atk_dam - std_dam) > self.delta and atk_dam > best_dam:
                 best_dam = atk_dam
                 adv_acts = acts
                 attack = True

@@ -76,13 +76,15 @@ def benchmark_adversarial_policy(args=get_args()):
     if "Pong" in args.task:
         acts_mask = [3, 4]
         dam = dam_pong
+        delta = 100
     collector = critical_point_attack_collector(policy, env, obs_adv_atk,
                                                 perfect_attack=args.perfect_attack,
                                                 acts_mask=acts_mask,
                                                 device=args.device,
                                                 full_search=args.full_search,
                                                 repeat_adv_act=args.repeat_act,
-                                                dam=dam
+                                                dam=dam,
+                                                delta=delta
                                                 )
     n_range = list(np.arange(args.min, args.max)) + [args.max]
     m_range = [0., 1., 2., 3., 4.]
