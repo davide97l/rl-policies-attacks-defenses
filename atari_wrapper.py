@@ -226,3 +226,16 @@ def wrap_deepmind(env_id, episode_life=True, clip_rewards=True,
     if frame_stack:
         env = FrameStack(env, frame_stack)
     return env
+
+
+class InverseReward(gym.Wrapper):
+    """Adversarial environment where the reward = -reward of the original environment
+    :param gym.Env env: the environment to wrap.
+    """
+
+    def __init__(self, env):
+        super().__init__(env)
+
+    def step(self, action):
+        obs, reward, done, info = self.env.step(action)
+        return obs, -reward, done, info

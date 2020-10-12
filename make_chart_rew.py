@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import sys
 
 
 def sort_pivot(list1, list2):
@@ -36,10 +37,10 @@ if __name__ == '__main__':
     model = "dqn"
     transfer_model = "dqn"
     img_attack = "fgm_eps_0.1"  # fgm_eps_0.05, perfect_attack, fgm_eps_0.3
-    rl_attack = "critical_point_attack"  # strategically_timed_attack, uniform_attack, critical_strategy_attack
+    rl_attack = "adversarial_policy_attack"  # strategically_timed_attack, uniform_attack, critical_strategy_attack, critical_point_attack, adversarial_policy_attack
     has_atk_freq = 1
     has_n_attacks = 0
-    smoothing = 2
+    smoothing = 4
     input_file = [
         "log/" + task + "NoFrameskip-v4/" + model + "/" + rl_attack + "_" + img_attack + ".npy",
         "log/" + task + "NoFrameskip-v4/" + model + "/" + rl_attack + "_" + img_attack + "_transf_" + transfer_model + ".npy",
@@ -56,6 +57,8 @@ if __name__ == '__main__':
             rewards.append(np.load(f))
 
     assert has_atk_freq or has_n_attacks
+    if has_atk_freq and has_n_attacks:
+        sys.exit(0)
     if has_atk_freq:
         x = atk_freq
     elif has_n_attacks:

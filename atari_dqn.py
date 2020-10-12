@@ -11,7 +11,7 @@ from net.discrete_net import DQN
 from tianshou.trainer import offpolicy_trainer
 from tianshou.data import Collector, ReplayBuffer
 
-from atari_wrapper import wrap_deepmind
+from atari_wrapper import wrap_deepmind, InverseReward
 
 
 def get_args():
@@ -41,16 +41,24 @@ def get_args():
     parser.add_argument('--resume_path', type=str, default=None)
     parser.add_argument('--watch', default=False, action='store_true',
                         help='watch the play of pre-trained policy only')
+    parser.add_argument('--invert_reward', default=False, action='store_true',
+                        help="rew'=-rew")
     return parser.parse_args()
 
 
 def make_atari_env(args):
-    return wrap_deepmind(args.task, frame_stack=args.frames_stack)
+    environment = wrap_deepmind(args.task, frame_stack=args.frames_stack)
+    if args.invert_reward:
+        environment = InverseReward(environment)
+    return environment
 
 
 def make_atari_env_watch(args):
-    return wrap_deepmind(args.task, frame_stack=args.frames_stack,
-                         episode_life=False, clip_rewards=False)
+    environment = wrap_deepmind(args.task, frame_stack=args.frames_stack,
+                                episode_life=False, clip_rewards=False)
+    if args.invert_reward:
+        environment = InverseReward(environment)
+    return environment
 
 
 def test_dqn(args=get_args()):
