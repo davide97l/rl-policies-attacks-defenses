@@ -45,9 +45,9 @@ python atari_critical_point_attack_benchmark.py --task "PongNoFrameskip-v4" --re
 - Pong DQN critical point attack
 python atari_critical_point_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --full_search --repeat_act 2 --eps 0.1 --test_num 10 --perfect_attack
 - Pong DQN adversarial policy attack transferability policy
-python atari_adversarial_policy_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --adv_policy "dqn" --adv_policy_path "log_adv_policy/PongNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --target_policy_path "log_2/PongNoFrameskip-v4/dqn/policy.pth" --target_policy "dqn" --eps 0.1 --min 0.02 --max 0.04 --steps 11 --test_num 10
+python atari_adversarial_policy_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --adv_policy "dqn" --adv_policy_path "log_adv_policy/PongNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --target_policy_path "log_2/PongNoFrameskip-v4/dqn/policy.pth" --target_policy "dqn" --eps 0.1 --min 0.025 --max 0.04 --steps 11 --test_num 10
 - Pong DQN adversarial policy attack
-python atari_adversarial_policy_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --adv_policy "dqn" --adv_policy_path "log_adv_policy/PongNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --eps 0.1 --min 0.02 --max 0.04 --steps 11 --test_num 10 --perfect_attack
+python atari_adversarial_policy_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --adv_policy "dqn" --adv_policy_path "log_adv_policy/PongNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --eps 0.1 --min 0.025 --max 0.04 --steps 11 --test_num 10 --perfect_attack
 
 
 

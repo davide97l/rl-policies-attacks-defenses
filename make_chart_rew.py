@@ -40,12 +40,13 @@ if __name__ == '__main__':
     rl_attack = "adversarial_policy_attack"  # strategically_timed_attack, uniform_attack, critical_strategy_attack, critical_point_attack, adversarial_policy_attack
     has_atk_freq = 1
     has_n_attacks = 0
-    smoothing = 4
+    smoothing = 5
     input_file = [
         "log/" + task + "NoFrameskip-v4/" + model + "/" + rl_attack + "_" + img_attack + ".npy",
         "log/" + task + "NoFrameskip-v4/" + model + "/" + rl_attack + "_" + img_attack + "_transf_" + transfer_model + ".npy",
         #"log/" + task + "NoFrameskip-v4/" + model + "/" + rl_attack + "_" + "perfect_attack" + ".npy",
-                  ]
+    ]
+
     n_lines = len(input_file)
     atk_freq = []
     n_attacks = []
