@@ -55,6 +55,7 @@ def make_policy(args, policy_type, resume_path):
         policy.load_state_dict(torch.load(resume_path))
         print("Loaded agent from: ", resume_path)
     policy.eval()
+    policy.set_eps(0.005)
     return policy, model
 
 
