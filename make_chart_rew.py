@@ -33,14 +33,15 @@ def limit_lists(limit_freq, x_lists, y_lists):
 if __name__ == '__main__':
 
     # Data
-    task = "Pong"
+    task = "Breakout"  # Pong
     model = "dqn"
     transfer_model = "dqn"
     img_attack = "fgm_eps_0.1"  # fgm_eps_0.05, perfect_attack, fgm_eps_0.3
     rl_attack = "adversarial_policy_attack"  # strategically_timed_attack, uniform_attack, critical_strategy_attack, critical_point_attack, adversarial_policy_attack
     has_atk_freq = 1
     has_n_attacks = 0
-    smoothing = 5
+    smoothing = 2
+    limit_freq = 0.3 # 0.03
     input_file = [
         "log/" + task + "NoFrameskip-v4/" + model + "/" + rl_attack + "_" + img_attack + ".npy",
         "log/" + task + "NoFrameskip-v4/" + model + "/" + rl_attack + "_" + img_attack + "_transf_" + transfer_model + ".npy",
@@ -74,6 +75,11 @@ if __name__ == '__main__':
         #print("Rewards:", rewards[i])
         #print("Number attacks:", n_attacks[i])
         rewards[i] = smooth(x[i], rewards[i], smoothing=smoothing)
+
+        if limit_freq:
+            x[i] = [j for j in x[i] if j <= limit_freq]
+            rewards[i] = rewards[i][:len(x[i])]
+
         x1_lists.append(x[i])
         y1_lists.append(rewards[i])
         if i == n_lines-1 and x[i][-1] < min_x:
@@ -101,4 +107,3 @@ if __name__ == '__main__':
     plt.ylabel("Final reward")
 
     plt.show()
-

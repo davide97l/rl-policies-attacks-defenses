@@ -77,6 +77,10 @@ def benchmark_adversarial_policy(args=get_args()):
         acts_mask = [3, 4]
         dam = dam_pong
         delta = 100
+    if "Breakout" in args.task:
+        acts_mask = [1, 2, 3]
+        dam = dam_breakout
+        delta = 100
     collector = critical_point_attack_collector(policy, env, obs_adv_atk,
                                                 perfect_attack=args.perfect_attack,
                                                 acts_mask=acts_mask,

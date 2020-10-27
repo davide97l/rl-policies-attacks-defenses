@@ -120,7 +120,7 @@ class critical_point_attack_collector(critical_strategy_attack_collector):
                 attack = True
                 if not self.full_search:
                     return adv_acts, attack
-        #print(std_dam, best_dam)
+        # print(std_dam, best_dam)
         return adv_acts, attack
 
 
