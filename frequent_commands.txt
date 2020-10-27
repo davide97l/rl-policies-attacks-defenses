@@ -63,9 +63,9 @@ python atari_critical_strategy_attack_benchmark.py --task "BreakoutNoFrameskip-v
 - Breakout DQN critical strategy attack
 python atari_critical_strategy_attack_benchmark.py --task "BreakoutNoFrameskip-v4" --resume_path "log/BreakoutNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --eps 0.1 --test_num 5 --repeat_act 6 --full_search --perfect_attack
 - Breakout DQN critical point attack transferability policy
-python atari_critical_point_attack_benchmark.py --task "BreakoutNoFrameskip-v4" --resume_path "log/BreakoutNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --target_policy_path "log_2/BreakoutNoFrameskip-v4/dqn/policy.pth" --target_policy "dqn" --full_search --repeat_act 2 --eps 0.1 --test_num 5 --min 1 --max 3
+python atari_critical_point_attack_benchmark.py --task "BreakoutNoFrameskip-v4" --resume_path "log/BreakoutNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --target_policy_path "log_2/BreakoutNoFrameskip-v4/dqn/policy.pth" --target_policy "dqn" --full_search --repeat_act 2 --eps 0.1 --test_num 5 --min 1 --max 1
 - Breakout DQN critical point attack
-python atari_critical_point_attack_benchmark.py --task "BreakoutNoFrameskip-v4" --resume_path "log/BreakoutNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --full_search --repeat_act 2 --eps 0.1 --test_num 5 --min 1 --max 3 --perfect_attack
+python atari_critical_point_attack_benchmark.py --task "BreakoutNoFrameskip-v4" --resume_path "log/BreakoutNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --full_search --repeat_act 2 --eps 0.1 --test_num 5 --min 1 --max 1 --perfect_attack
 - Breakout DQN adversarial policy attack transferability policy
 python atari_adversarial_policy_attack_benchmark.py --task "BreakoutNoFrameskip-v4" --resume_path "log/BreakoutNoFrameskip-v4/dqn/policy.pth" --adv_policy "dqn" --adv_policy_path "log_adv_policy/BreakoutNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --target_policy_path "log_2/BreakoutNoFrameskip-v4/dqn/policy.pth" --target_policy "dqn" --eps 0.1 --min 0.02 --max 0.07 --steps 11 --test_num 20
 - Breakout DQN adversarial policy attack
@@ -74,4 +74,8 @@ python atari_adversarial_policy_attack_benchmark.py --task "BreakoutNoFrameskip-
 
 
 source venv/bin/activate
+
+TIPS:
+when dealing with critical point attack, remember to set "delta"
+when dealing with adversarial policy attack, remember to train adversarial policy
 

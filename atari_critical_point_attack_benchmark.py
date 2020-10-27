@@ -91,7 +91,8 @@ def benchmark_adversarial_policy(args=get_args()):
                                                 delta=delta
                                                 )
     n_range = list(np.arange(args.min, args.max)) + [args.max]
-    m_range = [0., 1., 2., 3., 4.]
+    m_range = [0., 1., 2., 3., 4., 5., 6., 7., 8., 9., 10.]  # breakout
+    # m_range = [0., 1., 2., 3., 4.]  # pong
     atk_freq = []
     n_attacks = []
     rewards = []
