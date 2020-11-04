@@ -3,18 +3,38 @@ import torch
 from net.discrete_net import DQN, ConvNet, Actor, Critic
 from tianshou.policy import DQNPolicy, A2CPolicy
 from advertorch.attacks import *
+from atari_wrapper import wrap_deepmind
+import os
+import copy
 
 
-class NetAdapter(nn.Module):
+class TianshouNetAdapter(nn.Module):
     """
     Tianshou models return (logits, state) while Advertorch models should return (logits).
     Hence, this class adapts Tianshou output to Advertorch output."""
-    def __init__(self, net):
+    def __init__(self, policy):
         super().__init__()
-        self.net = net
+        self.net = policy.model
 
     def forward(self, s):
         return self.net(s)[0]
+
+
+class A2CPPONetAdapter(nn.Module):
+    """
+    Adapt the output of A2C-PPO models to Advertorch required output (logits)."""
+    def __init__(self, policy):
+        super().__init__()
+        self.net = policy.base
+        self.rnn_hxs = torch.zeros(1, policy.recurrent_hidden_state_size)
+        self.masks = torch.zeros(1, 1)
+        self.dist = policy.dist
+
+    def forward(self, s):
+        value, actor_features, rnn_hxs = self.net(s, self.rnn_hxs, self.masks)
+        self.rnn_hxs = rnn_hxs
+        dist = self.dist(actor_features)
+        return dist.logits
 
 
 def make_dqn(args):
@@ -25,13 +45,13 @@ def make_dqn(args):
     policy = DQNPolicy(net, None, args.gamma, args.n_step,
                        target_update_freq=args.target_update_freq)
     policy.set_eps(0)
-    return policy, policy.model
+    return policy
 
 
 def make_a2c(args):
     """Make a A2C policy
     :return: policy, actor network"""
-    net = ConvNet(*args.state_shape, args.device).to(args.device)
+    """net = ConvNet(*args.state_shape, args.device).to(args.device)
     actor = Actor(net, args.action_shape).to(args.device)
     critic = Critic(net).to(args.device)
     dist = torch.distributions.Categorical
@@ -39,24 +59,29 @@ def make_a2c(args):
         actor, critic, None, dist, args.gamma, vf_coef=args.vf_coef,
         ent_coef=args.ent_coef, max_grad_norm=args.max_grad_norm,
         target_update_freq=args.target_update_freq)
-    return policy, policy.actor
+    return policy, policy.actor"""
+    actor_critic, _ = torch.load(args.resume_path)
+    actor_critic.to(args.device).init(args.device)
+    return actor_critic
 
 
 def make_policy(args, policy_type, resume_path):
     """Make a 'policy_type' policy
     :return: policy, actor network"""
     assert policy_type in ["dqn", "a2c", "ppo"]
-    policy, model = None, None
+    policy = None
     if policy_type == "dqn":
-        policy, model = make_dqn(args)
+        policy = make_dqn(args)
     if policy_type == "a2c":
-        policy, model = make_a2c(args)
+        policy = make_a2c(args)
     if resume_path:
-        policy.load_state_dict(torch.load(resume_path))
+        if policy_type == "dqn":
+            policy.load_state_dict(torch.load(resume_path))
         print("Loaded agent from: ", resume_path)
     policy.eval()
-    policy.set_eps(0.005)
-    return policy, model
+    if hasattr(policy, 'eps'):
+        policy.set_eps(0.005)
+    return policy
 
 
 def make_img_adv_attack(args, adv_net, min_pixel=0., max_pixel=255., targeted=False):
@@ -74,3 +99,22 @@ def make_img_adv_attack(args, adv_net, min_pixel=0., max_pixel=255., targeted=Fa
                                             clip_min=min_pixel, clip_max=max_pixel, targeted=targeted)
         atk_type = "cw_iter_" + str(args.iterations)
     return obs_adv_atk, atk_type
+
+
+def make_victim_network(args, policy):
+    if args.target_policy is None:
+        if args.policy == 'dqn':
+            adv_net = TianshouNetAdapter(copy.deepcopy(policy)).to(args.device)
+        if args.policy in ['a2c', 'ppo']:
+            adv_net = A2CPPONetAdapter(copy.deepcopy(policy)).to(args.device)
+    elif args.target_policy == 'dqn':
+        adv_net = TianshouNetAdapter(copy.deepcopy(policy)).to(args.device)
+    elif args.target_policy in ['a2c', 'ppo']:
+        adv_net = A2CPPONetAdapter(copy.deepcopy(policy)).to(args.device)
+    adv_net.eval()
+    return adv_net
+
+
+def make_atari_env_watch(args):
+    return wrap_deepmind(args.task, frame_stack=args.frames_stack,
+                         episode_life=False, clip_rewards=False)

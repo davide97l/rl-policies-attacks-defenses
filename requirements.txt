@@ -4,3 +4,4 @@ gym
 opencv-python
 numpy
 matplotlib
+atari-py
