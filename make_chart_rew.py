@@ -34,21 +34,26 @@ if __name__ == '__main__':
 
     # Data
     task = "Pong"  # Pong
-    model = "dqn"
-    transfer_model = "dqn"
-    img_attack = "fgm_eps_0.1"  # fgm_eps_0.05, perfect_attack, fgm_eps_0.3
-    rl_attack = "uniform_attack"  # strategically_timed_attack, uniform_attack, critical_strategy_attack, critical_point_attack, adversarial_policy_attack
+    model = "a2c"
+    n_lines = 3
+    transfer_model = "a2c"
+    transfer_model_2 = "dqn"
+    img_attack = "fgm_eps_0.01"  # fgm_eps_0.05, perfect_attack, fgm_eps_0.3
+    rl_attack = "adversarial_policy_attack"  # strategically_timed_attack, uniform_attack, critical_strategy_attack, critical_point_attack, adversarial_policy_attack
     has_atk_freq = 1
     has_n_attacks = 0
-    smoothing = 2
-    limit_freq = None  # 0.03
+    smoothing = 4
+    limit_freq = None
     input_file = [
         "log/" + task + "NoFrameskip-v4/" + model + "/" + rl_attack + "_" + img_attack + ".npy",
         "log/" + task + "NoFrameskip-v4/" + model + "/" + rl_attack + "_" + img_attack + "_transf_" + transfer_model + ".npy",
-        #"log/" + task + "NoFrameskip-v4/" + model + "/" + rl_attack + "_" + "perfect_attack" + ".npy",
+        "log/" + task + "NoFrameskip-v4/" + model + "/" + rl_attack + "_" + img_attack + "_transf_" + transfer_model_2 + ".npy",
     ]
 
-    n_lines = len(input_file)
+    if n_lines is None:
+        n_lines = len(input_file)
+    else:
+        input_file = input_file[:n_lines]
     atk_freq = []
     n_attacks = []
     rewards = []
@@ -91,9 +96,11 @@ if __name__ == '__main__':
         x[i] = x_lists[i]
         rewards[i] = y_lists[i]
 
-    plt.plot(x[0], rewards[0], label="Policy")
-    plt.plot(x[1], rewards[1], label="Transfer Policy")
-    #plt.plot(x[2], rewards[2], label="Perfect Attack")
+    plt.plot(x[0], rewards[0], label="Policy (" + model + ")")
+    if n_lines > 1:
+        plt.plot(x[1], rewards[1], label="Transfer Policy (" + transfer_model + ")")
+    if n_lines > 2:
+        plt.plot(x[2], rewards[2], label="Transfer Algorithm (" + transfer_model_2 + ")")
 
     plt.legend(loc='upper right')
 

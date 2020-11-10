@@ -48,7 +48,7 @@ def make_dqn(args):
     return policy
 
 
-def make_a2c(args):
+def make_a2c(args, resume_path):
     """Make a A2C policy
     :return: policy, actor network"""
     """net = ConvNet(*args.state_shape, args.device).to(args.device)
@@ -60,7 +60,7 @@ def make_a2c(args):
         ent_coef=args.ent_coef, max_grad_norm=args.max_grad_norm,
         target_update_freq=args.target_update_freq)
     return policy, policy.actor"""
-    actor_critic, _ = torch.load(args.resume_path)
+    actor_critic, _ = torch.load(resume_path)
     actor_critic.to(args.device).init(args.device)
     return actor_critic
 
@@ -73,7 +73,8 @@ def make_policy(args, policy_type, resume_path):
     if policy_type == "dqn":
         policy = make_dqn(args)
     if policy_type == "a2c":
-        policy = make_a2c(args)
+        assert resume_path is not None
+        policy = make_a2c(args, resume_path)
     if resume_path:
         if policy_type == "dqn":
             policy.load_state_dict(torch.load(resume_path))

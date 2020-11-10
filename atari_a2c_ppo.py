@@ -78,7 +78,9 @@ def main():
         watch()
         exit(0)
 
-    if args.algo == 'a2c':
+    if args.resume_path is not None:
+        agent = actor_critic
+    elif args.algo == 'a2c':
         agent = algo.A2C_ACKTR(
             actor_critic,
             args.value_loss_coef,
@@ -219,7 +221,7 @@ def main():
                             len(episode_rewards), np.mean(episode_rewards),
                             np.median(episode_rewards), np.min(episode_rewards),
                             np.max(episode_rewards), best_reward))
-
+    print("model saved to " + str(os.path.join(args.save_dir, args.algo, "policy.pth")))
     watch()
 
 

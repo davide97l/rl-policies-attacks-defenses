@@ -2,10 +2,8 @@ import os
 import torch
 import argparse
 import numpy as np
-import copy
 from drl_attacks.adversarial_policy_attack import adversarial_policy_attack_collector
-from atari_wrapper import wrap_deepmind
-from utils import NetAdapter, make_policy, make_img_adv_attack
+from utils import make_policy, make_img_adv_attack, make_atari_env_watch, make_victim_network
 
 
 def get_args():
@@ -19,7 +17,6 @@ def get_args():
     parser.add_argument('--max-grad-norm', type=float, default=0.5)  # only a2c and ppo
     parser.add_argument('--target_update_freq', type=int, default=500)
     parser.add_argument('--test_num', type=int, default=10)
-    parser.add_argument('--render', type=float, default=0.)
     parser.add_argument(
         '--device', type=str,
         default='cuda' if torch.cuda.is_available() else 'cpu')
@@ -28,7 +25,7 @@ def get_args():
     parser.add_argument('--image_attack', type=str, default='fgm')  # fgm, cw
     parser.add_argument('--policy', type=str, default='dqn')  # dqn, a2c, ppo
     parser.add_argument('--perfect_attack', default=False, action='store_true')
-    parser.add_argument('--eps', type=float, default=0.3)
+    parser.add_argument('--eps', type=float, default=0.1)
     parser.add_argument('--iterations', type=int, default=100)
     parser.add_argument('--logdir', type=str, default='log')
     parser.add_argument('--target_policy_path', type=str, default=None)  # log_2/PongNoFrameskip-v4/dqn/policy.pth
@@ -43,11 +40,6 @@ def get_args():
     return args
 
 
-def make_atari_env_watch(args):
-    return wrap_deepmind(args.task, frame_stack=args.frames_stack,
-                         episode_life=False, clip_rewards=False)
-
-
 def benchmark_adversarial_policy(args=get_args()):
     env = make_atari_env_watch(args)
     args.state_shape = env.observation_space.shape or env.observation_space.n
@@ -58,15 +50,15 @@ def benchmark_adversarial_policy(args=get_args()):
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
     # make policy
-    policy, model = make_policy(args, args.policy, args.resume_path)
+    policy = make_policy(args, args.policy, args.resume_path)
     # make target policy
     transferability_type = ""
     if args.target_policy is not None:
-        _, model = make_policy(args, args.target_policy, args.target_policy_path)
+        victim_policy = make_policy(args, args.target_policy, args.target_policy_path)
         transferability_type = "_transf_" + str(args.target_policy)
-    # define victim policy
-    adv_net = NetAdapter(copy.deepcopy(model)).to(args.device)
-    adv_net.eval()
+        adv_net = make_victim_network(args, victim_policy)
+    else:
+        adv_net = make_victim_network(args, policy)
     # define observations adversarial attack
     obs_adv_atk, atk_type = make_img_adv_attack(args, adv_net, targeted=True)
     print("Attack type:", atk_type)
@@ -74,7 +66,7 @@ def benchmark_adversarial_policy(args=get_args()):
     # define adversarial policy
     adv_policy = None
     if args.adv_policy is not None:
-        adv_policy, _ = make_policy(args, args.adv_policy, args.adv_policy_path)
+        adv_policy = make_policy(args, args.adv_policy, args.adv_policy_path)
     # define adversarial collector
     collector = adversarial_policy_attack_collector(policy, env, obs_adv_atk,
                                                     perfect_attack=args.perfect_attack,

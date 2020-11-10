@@ -30,7 +30,7 @@ def get_args():
     parser.add_argument('--logdir', type=str, default='log')
     parser.add_argument('--target_policy_path', type=str, default=None)  # log_2/PongNoFrameskip-v4/dqn/policy.pth
     parser.add_argument('--target_policy', type=str, default=None)  # dqn, a2c, ppo
-    parser.add_argument('--min', type=float, default=0.1)
+    parser.add_argument('--min', type=float, default=0.)
     parser.add_argument('--max', type=float, default=1.)
     parser.add_argument('--steps', type=int, default=21)
     args = parser.parse_known_args()[0]

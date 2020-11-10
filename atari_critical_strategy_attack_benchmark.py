@@ -2,10 +2,8 @@ import os
 import torch
 import argparse
 import numpy as np
-import copy
 from drl_attacks.critical_strategy_attack import critical_strategy_attack_collector
-from atari_wrapper import wrap_deepmind
-from utils import NetAdapter, make_policy, make_img_adv_attack
+from utils import make_policy, make_img_adv_attack, make_atari_env_watch, make_victim_network
 
 
 def get_args():
@@ -42,11 +40,6 @@ def get_args():
     return args
 
 
-def make_atari_env_watch(args):
-    return wrap_deepmind(args.task, frame_stack=args.frames_stack,
-                         episode_life=False, clip_rewards=False)
-
-
 def benchmark_adversarial_policy(args=get_args()):
     env = make_atari_env_watch(args)
     args.state_shape = env.observation_space.shape or env.observation_space.n
@@ -57,15 +50,15 @@ def benchmark_adversarial_policy(args=get_args()):
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
     # make policy
-    policy, model = make_policy(args, args.policy, args.resume_path)
+    policy = make_policy(args, args.policy, args.resume_path)
     # make target policy
     transferability_type = ""
     if args.target_policy is not None:
-        _, model = make_policy(args, args.target_policy, args.target_policy_path)
+        victim_policy = make_policy(args, args.target_policy, args.target_policy_path)
         transferability_type = "_transf_" + str(args.target_policy)
-    # define victim policy
-    adv_net = NetAdapter(copy.deepcopy(model)).to(args.device)
-    adv_net.eval()
+        adv_net = make_victim_network(args, victim_policy)
+    else:
+        adv_net = make_victim_network(args, policy)
     # define observations adversarial attack
     obs_adv_atk, atk_type = make_img_adv_attack(args, adv_net, targeted=True)
     print("Attack type:", atk_type)
