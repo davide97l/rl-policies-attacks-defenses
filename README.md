@@ -19,7 +19,7 @@ It also makes available trained models for different tasks which can be found in
 | SpaceInvadersNoFrameskip-v4 | 640         | `python3 atari_dqn.py --task "SpaceInvadersNoFrameskip-v4" --test_num 10`  | DQN    |
 | SeaquestNoFrameskip-v4      | NA          | `python3 atari_dqn.py --task "SeaquestNoFrameskip-v4" --test_num 10`  | DQN    |
 | PongNoFrameskip-v4          | 20          | `python atari_a2c_ppo.py --env-name "PongNoFrameskip-v4" --algo a2c` | A2C |
-| BreakoutNoFrameskip-v4      | 373         | `python atari_a2c_ppo.py --env-name "BreakoutNoFrameskip-v4" --algo a2c`  | A2C    |
+| BreakoutNoFrameskip-v4      | 400         | `python atari_a2c_ppo.py --env-name "BreakoutNoFrameskip-v4" --algo a2c`  | A2C    |
 | EnduroNoFrameskip-v4        | NA          | `python atari_a2c_ppo.py --env-name "EnduroNoFrameskip-v4" --algo a2c`  | A2C    |
 | QbertNoFrameskip-v4         | 7762        | `python atari_a2c_ppo.py --env-name "QbertNoFrameskip-v4" --algo a2c`  | A2C    |
 | MsPacmanNoFrameskip-v4      | 2230        | `python atari_a2c_ppo.py --env-name "MsPacmanNoFrameskip-v4" --algo a2c`  | A2C    |

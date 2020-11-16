@@ -33,17 +33,19 @@ def limit_lists(limit_freq, x_lists, y_lists):
 if __name__ == '__main__':
 
     # Data
-    task = "Pong"  # Pong
+    task = "Breakout"  # Pong
     model = "a2c"
     n_lines = 3
     transfer_model = "a2c"
     transfer_model_2 = "dqn"
-    img_attack = "fgm_eps_0.01"  # fgm_eps_0.05, perfect_attack, fgm_eps_0.3
-    rl_attack = "adversarial_policy_attack"  # strategically_timed_attack, uniform_attack, critical_strategy_attack, critical_point_attack, adversarial_policy_attack
+    img_attack = "fgm_eps_0.03"  # fgm_eps_0.05, perfect_attack, fgm_eps_0.3
+    rl_attack = "critical_strategy_attack"  # strategically_timed_attack, uniform_attack, critical_strategy_attack, critical_point_attack, adversarial_policy_attack
     has_atk_freq = 1
     has_n_attacks = 0
-    smoothing = 4
-    limit_freq = None
+    smoothing = 3
+    limit_freq = 0.1
+    min_freq = None
+    first_equal = False  # make first reward same as first line for all lines
     input_file = [
         "log/" + task + "NoFrameskip-v4/" + model + "/" + rl_attack + "_" + img_attack + ".npy",
         "log/" + task + "NoFrameskip-v4/" + model + "/" + rl_attack + "_" + img_attack + "_transf_" + transfer_model + ".npy",
@@ -82,14 +84,22 @@ if __name__ == '__main__':
         rewards[i] = smooth(x[i], rewards[i], smoothing=smoothing)
 
         if limit_freq:
-            x[i] = [j for j in x[i] if j <= limit_freq]
-            rewards[i] = rewards[i][:len(x[i])]
+            a = [(j, rewards[i][h]) for h, j in enumerate(x[i]) if j <= limit_freq]
+            rewards[i] = [e[1] for e in a]
+            x[i] = [e[0] for e in a]
+        if min_freq:
+            a = [(j, rewards[i][h]) for h, j in enumerate(x[i]) if j >= min_freq]
+            rewards[i] = [e[1] for e in a]
+            x[i] = [e[0] for e in a]
+
 
         x1_lists.append(x[i])
         y1_lists.append(rewards[i])
         if i == n_lines-1 and x[i][-1] < min_x:
             min_x = x[i][-1]
             min_index = i
+        if first_equal:
+            rewards[i][0] = max(rewards[0][0], rewards[1][0], rewards[2][0])
 
     x_lists, y_lists = limit_lists(min_x, x1_lists, y1_lists)
     for i in range(0, n_lines):
