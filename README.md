@@ -7,7 +7,7 @@ This repository implements some classic adversarial attack methods for deep rein
 - Adversarial policy attack [[link](https://arxiv.org/abs/1905.10615)].
 
 ## Available models
-It also makes available trained models for different tasks which can be found in the folder `log`. The following table reports their average score, the commands used to train them and their corresponding algorithm.
+It also makes available trained models for different tasks which can be found in the folder `log`. The following table reports their average score for three different algorithms: DQN, A2C and PPO.
 
 | task                        | DQN   | A2C   | PPO   |
 |-----------------------------|-------|-------|-------|
@@ -19,11 +19,47 @@ It also makes available trained models for different tasks which can be found in
 | SpaceInvadersNoFrameskip-v4 | 640   | 856   | 1120  |
 | SeaquestNoFrameskip-v4      | NA    | 1610  | 1798  |
 
-## Transferability over policies
-This section shows the performance of different adversarial attacks methods and their comparison between attacking an agent and a surrogate agent trained with the same policy (transfer policy).
+## Usage
+Train DQN agent to play Pong.
+```
+  python atari_dqn.py --task "PongNoFrameskip-v4"
+```
+Train A2C agent to play Breakout.
+```
+  python atari_a2c_ppo.py --env-name "BreakoutNoFrameskip-v4" --algo a2c
+```
+Train PPO agent to play Breakout.
+```
+  python atari_a2c_ppo.py --env-name "BreakoutNoFrameskip-v4"--algo ppo --use-gae --lr 2.5e-4 --clip-param 0.1 --value-loss-coef 0.5 --num-processes 8 --num-steps 128 --num-mini-batch 4 --log-interval 1 --use-linear-lr-decay --entropy-coef 0.01
+```
+Test DQN agent playing Pong.
+```
+  python atari_dqn.py --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --watch --test_num 10 --task "PongNoFrameskip-v4"
+```
+Test A2C agent playing Breakout.
+```
+  python atari_a2c_ppo.py --env-name "BreakoutNoFrameskip-v4" --algo a2c --resume_path "log/BreakoutNoFrameskip-v4/a2c/policy.pth" --watch --test_num 10
+```
+Test PPO agent playing Breakout.
+```
+  python atari_a2c_ppo.py --env-name "BreakoutNoFrameskip-v4" --algo ppo --resume_path "log/BreakoutNoFrameskip-v4/ppo/policy.pth" --watch --test_num 10
+```
+Train DQN malicious agent to play Pong minimizing the score.
+```
+  python atari_dqn.py --task "PongNoFrameskip-v4" --invert_reward --epoch 1
+```
+Attack Pong-DQN with Uniform Attack and FGSM with `eps=0.1`.
+```
+  python atari_uniform_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --eps 0.1
+```
+See files `atari_attack_name_benchmark` to understand how to perform each attack.
 
-![](results/pong_uniform_attack_dqn_fgm_eps_01_transfer_dqn.png)
-![](results/pong_strategically_timed_attack_dqn_fgm_eps_01_transfer_dqn.png)
-![](results/pong_critical_strategy_attack_dqn_fgm_eps_01_transfer_dqn.png)
-![](results/pong_critical_point_attack_dqn_fgm_eps_01_transfer_dqn.png)
-![](results/pong_adversarial_policy_attack_dqn_fgm_eps_01_transfer_dqn.png)
+
+## Test transferability over policies
+This section shows the performance of different adversarial attacks methods and their comparison between attacking an agent and 2 surrogate agents: one trained with the same policy and one trained on a different algorithm.
+
+![](results/dqn_transfer_dqn_a2c/pong_uniform_attack_dqn_fgm_eps_01_transfer_dqn_a2c.png)
+![](results/dqn_transfer_dqn_a2c/pong_strategically_timed_attack_dqn_fgm_eps_01_transfer_dqn_a2c.png)
+![](results/dqn_transfer_dqn_a2c/pong_critical_strategy_attack_dqn_fgm_eps_01_transfer_dqn_a2c.png)
+![](results/dqn_transfer_dqn_a2c/pong_critical_point_attack_dqn_fgm_eps_01_transfer_dqn_a2c.png)
+![](results/dqn_transfer_dqn_a2c/pong_adversarial_policy_attack_dqn_fgm_eps_01_transfer_dqn_a2c.png)
