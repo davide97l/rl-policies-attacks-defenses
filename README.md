@@ -20,39 +20,43 @@ It also makes available trained models for different tasks which can be found in
 | SeaquestNoFrameskip-v4      | NA    | 1610  | 1798  |
 
 ## Usage
-Train DQN agent to play Pong.
+**Train** DQN agent to play Pong.
 ```
   python atari_dqn.py --task "PongNoFrameskip-v4"
 ```
-Train A2C agent to play Breakout.
+**Train** A2C agent to play Breakout.
 ```
   python atari_a2c_ppo.py --env-name "BreakoutNoFrameskip-v4" --algo a2c
 ```
-Train PPO agent to play Breakout.
+**Train** PPO agent to play Breakout.
 ```
   python atari_a2c_ppo.py --env-name "BreakoutNoFrameskip-v4"--algo ppo --use-gae --lr 2.5e-4 --clip-param 0.1 --value-loss-coef 0.5 --num-processes 8 --num-steps 128 --num-mini-batch 4 --log-interval 1 --use-linear-lr-decay --entropy-coef 0.01
 ```
-Test DQN agent playing Pong.
+**Test** DQN agent playing Pong.
 ```
   python atari_dqn.py --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --watch --test_num 10 --task "PongNoFrameskip-v4"
 ```
-Test A2C agent playing Breakout.
+**Test** A2C agent playing Breakout.
 ```
   python atari_a2c_ppo.py --env-name "BreakoutNoFrameskip-v4" --algo a2c --resume_path "log/BreakoutNoFrameskip-v4/a2c/policy.pth" --watch --test_num 10
 ```
-Test PPO agent playing Breakout.
+**Test** PPO agent playing Breakout.
 ```
   python atari_a2c_ppo.py --env-name "BreakoutNoFrameskip-v4" --algo ppo --resume_path "log/BreakoutNoFrameskip-v4/ppo/policy.pth" --watch --test_num 10
 ```
-Train DQN malicious agent to play Pong minimizing the score.
+**Train** DQN malicious agent to play Pong minimizing the score.
 ```
   python atari_dqn.py --task "PongNoFrameskip-v4" --invert_reward --epoch 1
 ```
-Attack Pong-DQN with Uniform Attack and FGSM with `eps=0.1`.
+**Attack** Pong-DQN with Uniform Attack and FGSM with `eps=0.1`.
 ```
   python atari_uniform_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --eps 0.1
 ```
-See files `atari_attack_name_benchmark` to understand how to perform each attack.
+**Attack** Breakout-A2C with Adversarial Policy Attack and FGSM according to a DQN-adversarial policy and performing attacks on a DQN surrogate model.
+```
+  python atari_adversarial_policy_attack_benchmark.py --task "BreakoutNoFrameskip-v4" --resume_path "log/BreakoutNoFrameskip-v4/a2c/policy.pth" --adv_policy "dqn" --adv_policy_path "log_adv_policy/BreakoutNoFrameskip-v4/dqn/policy.pth" --policy "a2c" --target_policy_path "log_2/BreakoutNoFrameskip-v4/a2c/policy.pth" --target_policy "a2c" --eps 0.01 --min 0.95 --max 1. --steps 11 --test_num 10
+```
+Moreover, you should see files `atari_attack_name_benchmark.py` to understand how to perform a specific attack.
 
 
 ## Test transferability over policies
