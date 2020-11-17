@@ -16,6 +16,15 @@ python atari_a2c_ppo.py --env-name "EnduroNoFrameskip-v4" --num-env-steps 100000
 python atari_a2c_ppo.py --env-name "QbertNoFrameskip-v4" --num-env-steps 10000000 --algo a2c --save-dir log
 python atari_a2c_ppo.py --env-name "SeaquestNoFrameskip-v4" --num-env-steps 10000000 --algo a2c --save-dir log
 
+TRAINING PPO (with params)
+python atari_a2c_ppo.py --env-name "PongNoFrameskip-v4" --num-env-steps 10000000 --algo ppo --use-gae --lr 2.5e-4 --clip-param 0.1 --value-loss-coef 0.5 --num-processes 8 --num-steps 128 --num-mini-batch 4 --log-interval 1 --use-linear-lr-decay --entropy-coef 0.01 --save-dir log
+python atari_a2c_ppo.py --env-name "BreakoutNoFrameskip-v4" --num-env-steps 10000000 --algo ppo --use-gae --lr 2.5e-4 --clip-param 0.1 --value-loss-coef 0.5 --num-processes 8 --num-steps 128 --num-mini-batch 4 --log-interval 1 --use-linear-lr-decay --entropy-coef 0.01 --save-dir log
+python atari_a2c_ppo.py --env-name "MsPacmanNoFrameskip-v4" --num-env-steps 10000000 --algo ppo --use-gae --lr 2.5e-4 --clip-param 0.1 --value-loss-coef 0.5 --num-processes 8 --num-steps 128 --num-mini-batch 4 --log-interval 1 --use-linear-lr-decay --entropy-coef 0.01 --save-dir log
+python atari_a2c_ppo.py --env-name "SpaceInvadersNoFrameskip-v4" --num-env-steps 10000000 --algo ppo --use-gae --lr 2.5e-4 --clip-param 0.1 --value-loss-coef 0.5 --num-processes 8 --num-steps 128 --num-mini-batch 4 --log-interval 1 --use-linear-lr-decay --entropy-coef 0.01 --save-dir log
+python atari_a2c_ppo.py --env-name "EnduroNoFrameskip-v4" --num-env-steps 10000000 --algo ppo --use-gae --lr 2.5e-4 --clip-param 0.1 --value-loss-coef 0.5 --num-processes 8 --num-steps 128 --num-mini-batch 4 --log-interval 1 --use-linear-lr-decay --entropy-coef 0.01 --save-dir log
+python atari_a2c_ppo.py --env-name "QbertNoFrameskip-v4" --num-env-steps 10000000 --algo ppo --use-gae --lr 2.5e-4 --clip-param 0.1 --value-loss-coef 0.5 --num-processes 8 --num-steps 128 --num-mini-batch 4 --log-interval 1 --use-linear-lr-decay --entropy-coef 0.01 --save-dir log
+python atari_a2c_ppo.py --env-name "SeaquestNoFrameskip-v4" --num-env-steps 10000000 --algo ppo --use-gae --lr 2.5e-4 --clip-param 0.1 --value-loss-coef 0.5 --num-processes 8 --num-steps 128 --num-mini-batch 4 --log-interval 1 --use-linear-lr-decay --entropy-coef 0.01 --save-dir log
+
 TRAIN ADVERSARIAL DQN
 python atari_dqn.py --task "PongNoFrameskip-v4" --invert_reward --epoch 1
 
@@ -138,4 +147,7 @@ pip install -e .
 TIPS:
 when dealing with critical point attack, remember to set "delta"
 when dealing with adversarial policy attack, remember to train adversarial policy
+
+REFERENCES
+https://github.com/ikostrikov/pytorch-a2c-ppo-acktr-gail
 

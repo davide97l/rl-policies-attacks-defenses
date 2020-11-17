@@ -39,7 +39,7 @@ class A2CPPONetAdapter(nn.Module):
 
 def make_dqn(args):
     """Make a DQN policy
-    :return: policy, actor network"""
+    :return: policy"""
     net = DQN(*args.state_shape,
               args.action_shape, args.device).to(args.device)
     policy = DQNPolicy(net, None, args.gamma, args.n_step,
@@ -50,16 +50,15 @@ def make_dqn(args):
 
 def make_a2c(args, resume_path):
     """Make a A2C policy
-    :return: policy, actor network"""
-    """net = ConvNet(*args.state_shape, args.device).to(args.device)
-    actor = Actor(net, args.action_shape).to(args.device)
-    critic = Critic(net).to(args.device)
-    dist = torch.distributions.Categorical
-    policy = A2CPolicy(
-        actor, critic, None, dist, args.gamma, vf_coef=args.vf_coef,
-        ent_coef=args.ent_coef, max_grad_norm=args.max_grad_norm,
-        target_update_freq=args.target_update_freq)
-    return policy, policy.actor"""
+    :return: policy"""
+    actor_critic, _ = torch.load(resume_path)
+    actor_critic.to(args.device).init(args.device)
+    return actor_critic
+
+
+def make_ppo(args, resume_path):
+    """Make a PPO policy
+    :return: policy"""
     actor_critic, _ = torch.load(resume_path)
     actor_critic.to(args.device).init(args.device)
     return actor_critic
@@ -67,7 +66,7 @@ def make_a2c(args, resume_path):
 
 def make_policy(args, policy_type, resume_path):
     """Make a 'policy_type' policy
-    :return: policy, actor network"""
+    :return: policy"""
     assert policy_type in ["dqn", "a2c", "ppo"]
     policy = None
     if policy_type == "dqn":
@@ -75,6 +74,9 @@ def make_policy(args, policy_type, resume_path):
     if policy_type == "a2c":
         assert resume_path is not None
         policy = make_a2c(args, resume_path)
+    if policy_type == "ppo":
+        assert resume_path is not None
+        policy = make_ppo(args, resume_path)
     if resume_path:
         if policy_type == "dqn":
             policy.load_state_dict(torch.load(resume_path))
