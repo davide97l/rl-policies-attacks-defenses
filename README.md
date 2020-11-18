@@ -50,13 +50,13 @@ It also makes available trained models for different tasks which can be found in
 ```
 **Attack** Pong-DQN with Uniform Attack and FGSM with `eps=0.1`.
 ```
-  python atari_uniform_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --eps 0.1
+  python examples/atari_uniform_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --policy "dqn" --eps 0.1
 ```
 **Attack** Breakout-A2C with Adversarial Policy Attack and FGSM according to a DQN-adversarial policy and performing attacks on a DQN surrogate model.
 ```
-  python atari_adversarial_policy_attack_benchmark.py --task "BreakoutNoFrameskip-v4" --resume_path "log/BreakoutNoFrameskip-v4/a2c/policy.pth" --adv_policy "dqn" --adv_policy_path "log_adv_policy/BreakoutNoFrameskip-v4/dqn/policy.pth" --policy "a2c" --target_policy_path "log_2/BreakoutNoFrameskip-v4/a2c/policy.pth" --target_policy "a2c" --eps 0.01 --min 0.95 --max 1. --steps 11 --test_num 10
+  python examples/atari_adversarial_policy_attack_benchmark.py --task "BreakoutNoFrameskip-v4" --resume_path "log/BreakoutNoFrameskip-v4/a2c/policy.pth" --adv_policy "dqn" --adv_policy_path "log_adv_policy/BreakoutNoFrameskip-v4/dqn/policy.pth" --policy "a2c" --target_policy_path "log_2/BreakoutNoFrameskip-v4/a2c/policy.pth" --target_policy "a2c" --eps 0.01 --min 0.95 --max 1. --steps 11 --test_num 10
 ```
-Moreover, you should see files `atari_attack_name_benchmark.py` to understand how to perform a specific attack.
+Moreover, you should see files `examples/atari_attack_name_benchmark.py` to understand how to perform a specific attack.
 
 
 ## Test transferability over policies
