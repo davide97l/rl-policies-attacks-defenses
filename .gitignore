@@ -129,5 +129,5 @@ dmypy.json
 .pyre/
 
 .idea
-log_2/
 log_3/
+example.py

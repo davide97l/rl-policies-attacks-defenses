@@ -33,23 +33,25 @@ def limit_lists(limit_freq, x_lists, y_lists):
 if __name__ == '__main__':
 
     # Data
-    task = "Breakout"  # Pong
-    model = "a2c"
-    n_lines = 3
-    transfer_model = "a2c"
+    task = "Pong"  # Pong
+    model = "ppo"
+    n_lines = 4
+    transfer_model = "ppo"
     transfer_model_2 = "dqn"
-    img_attack = "fgm_eps_0.03"  # fgm_eps_0.05, perfect_attack, fgm_eps_0.3
-    rl_attack = "critical_strategy_attack"  # strategically_timed_attack, uniform_attack, critical_strategy_attack, critical_point_attack, adversarial_policy_attack
+    transfer_model_3 = "a2c"
+    img_attack = "fgm_eps_0.1"  # fgm_eps_0.05, perfect_attack, fgm_eps_0.3
+    rl_attack = "adversarial_policy_attack"  # strategically_timed_attack, uniform_attack, critical_strategy_attack, critical_point_attack, adversarial_policy_attack
     has_atk_freq = 1
     has_n_attacks = 0
-    smoothing = 3
-    limit_freq = 0.1
+    smoothing = 2
+    limit_freq = 0.18
     min_freq = None
-    first_equal = False  # make first reward same as first line for all lines
+    first_equal = True  # make first reward same as first line for all lines
     input_file = [
         "log/" + task + "NoFrameskip-v4/" + model + "/" + rl_attack + "_" + img_attack + ".npy",
         "log/" + task + "NoFrameskip-v4/" + model + "/" + rl_attack + "_" + img_attack + "_transf_" + transfer_model + ".npy",
         "log/" + task + "NoFrameskip-v4/" + model + "/" + rl_attack + "_" + img_attack + "_transf_" + transfer_model_2 + ".npy",
+        "log/" + task + "NoFrameskip-v4/" + model + "/" + rl_attack + "_" + img_attack + "_transf_" + transfer_model_3 + ".npy",
     ]
 
     if n_lines is None:
@@ -111,6 +113,8 @@ if __name__ == '__main__':
         plt.plot(x[1], rewards[1], label="Transfer Policy (" + transfer_model + ")")
     if n_lines > 2:
         plt.plot(x[2], rewards[2], label="Transfer Algorithm (" + transfer_model_2 + ")")
+    if n_lines > 3:
+        plt.plot(x[3], rewards[3], label="Transfer Algorithm (" + transfer_model_3 + ")")
 
     plt.legend(loc='upper right')
 

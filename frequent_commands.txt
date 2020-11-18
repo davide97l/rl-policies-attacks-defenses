@@ -134,6 +134,34 @@ python atari_adversarial_policy_attack_benchmark.py --task "BreakoutNoFrameskip-
 python atari_adversarial_policy_attack_benchmark.py --task "BreakoutNoFrameskip-v4" --resume_path "log/BreakoutNoFrameskip-v4/a2c/policy.pth" --adv_policy "dqn" --adv_policy_path "log_adv_policy/BreakoutNoFrameskip-v4/dqn/policy.pth" --policy "a2c" --target_policy_path "log_2/BreakoutNoFrameskip-v4/a2c/policy.pth" --target_policy "a2c" --eps 0.01 --min 0.95 --max 1. --steps 11 --test_num 10
 python atari_adversarial_policy_attack_benchmark.py --task "BreakoutNoFrameskip-v4" --resume_path "log/BreakoutNoFrameskip-v4/a2c/policy.pth" --adv_policy "dqn" --adv_policy_path "log_adv_policy/BreakoutNoFrameskip-v4/dqn/policy.pth" --policy "a2c" --eps 0.01 --min 0.95 --max 1. --steps 11 --test_num 10 --perfect_attack
 
+BENCHMARK - PONG PPO
+- Pong A2C uniform attack
+python atari_uniform_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/ppo/policy.pth" --policy "ppo" --target_policy_path "log_2/PongNoFrameskip-v4/a2c/policy.pth" --target_policy "a2c" --eps 0.1
+python atari_uniform_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/ppo/policy.pth" --policy "ppo" --target_policy_path "log_2/PongNoFrameskip-v4/dqn/policy.pth" --target_policy "dqn" --eps 0.1
+python atari_uniform_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/ppo/policy.pth" --policy "ppo" --target_policy_path "log_2/PongNoFrameskip-v4/ppo/policy.pth" --target_policy "ppo" --eps 0.1
+python atari_uniform_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/ppo/policy.pth" --policy "ppo" --eps 0.1 --perfect_attack
+- Pong A2C strategically timed attack
+python atari_strategically_timed_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/ppo/policy.pth" --policy "ppo" --target_policy_path "log_2/PongNoFrameskip-v4/a2c/policy.pth" --target_policy "a2c" --eps 0.1 --min 0.99 --max 1. --steps 11 --test_num 10
+python atari_strategically_timed_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/ppo/policy.pth" --policy "ppo" --target_policy_path "log_2/PongNoFrameskip-v4/dqn/policy.pth" --target_policy "dqn" --eps 0.1 --min 0.99 --max 1. --steps 11 --test_num 10
+python atari_strategically_timed_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/ppo/policy.pth" --policy "ppo" --target_policy_path "log_2/PongNoFrameskip-v4/ppo/policy.pth" --target_policy "ppo" --eps 0.1 --min 0.99 --max 1. --steps 11 --test_num 10
+python atari_strategically_timed_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/ppo/policy.pth" --policy "ppo" --eps 0.1 --min 0.99 --max 1. --steps 11 --test_num 10 --perfect_attack
+- Pong A2C critical strategy attack
+python atari_critical_strategy_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/ppo/policy.pth" --policy "ppo" --target_policy_path "log_2/PongNoFrameskip-v4/a2c/policy.pth" --target_policy "a2c" --eps 0.1 --repeat_act 2 --test_num 5 --full_search
+python atari_critical_strategy_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/ppo/policy.pth" --policy "ppo" --target_policy_path "log_2/PongNoFrameskip-v4/dqn/policy.pth" --target_policy "dqn" --eps 0.1 --repeat_act 2 --test_num 5 --full_search
+python atari_critical_strategy_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/ppo/policy.pth" --policy "ppo" --target_policy_path "log_2/PongNoFrameskip-v4/ppo/policy.pth" --target_policy "ppo" --eps 0.1 --repeat_act 2 --test_num 5 --full_search
+python atari_critical_strategy_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/ppo/policy.pth" --policy "ppo" --eps 0.1 --test_num 5 --repeat_act 2 --full_search --perfect_attack
+- Pong A2C critical point attack
+python atari_critical_point_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/ppo/policy.pth" --policy "ppo" --target_policy_path "log_2/PongNoFrameskip-v4/a2c/policy.pth" --target_policy "a2c" --full_search --repeat_act 2 --eps 0.01 --test_num 10
+python atari_critical_point_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/ppo/policy.pth" --policy "ppo" --target_policy_path "log_2/PongNoFrameskip-v4/dqn/policy.pth" --target_policy "dqn" --full_search --repeat_act 2 --eps 0.01 --test_num 10
+python atari_critical_point_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/ppo/policy.pth" --policy "ppo" --target_policy_path "log_2/PongNoFrameskip-v4/ppo/policy.pth" --target_policy "ppo" --full_search --repeat_act 2 --eps 0.01 --test_num 10
+python atari_critical_point_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/ppo/policy.pth" --policy "ppo" --full_search --repeat_act 2 --eps 0.01 --test_num 10 --perfect_attack
+- Pong A2C adversarial policy attack transferability policy
+python atari_adversarial_policy_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/ppo/policy.pth" --adv_policy "dqn" --adv_policy_path "log_adv_policy/PongNoFrameskip-v4/dqn/policy.pth" --policy "ppo" --target_policy_path "log_2/PongNoFrameskip-v4/a2c/policy.pth" --target_policy "a2c" --eps 0.1 --min 0.02 --max 0.03 --steps 11 --test_num 10
+python atari_adversarial_policy_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/ppo/policy.pth" --adv_policy "dqn" --adv_policy_path "log_adv_policy/PongNoFrameskip-v4/dqn/policy.pth" --policy "ppo" --target_policy_path "log_2/PongNoFrameskip-v4/dqn/policy.pth" --target_policy "dqn" --eps 0.1 --min 0.02 --max 0.03 --steps 11 --test_num 10
+python atari_adversarial_policy_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/ppo/policy.pth" --adv_policy "dqn" --adv_policy_path "log_adv_policy/PongNoFrameskip-v4/dqn/policy.pth" --policy "ppo" --target_policy_path "log_2/PongNoFrameskip-v4/ppo/policy.pth" --target_policy "ppo" --eps 0.1 --min 0.02 --max 0.03 --steps 11 --test_num 10
+python atari_adversarial_policy_attack_benchmark.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/ppo/policy.pth" --adv_policy "dqn" --adv_policy_path "log_adv_policy/PongNoFrameskip-v4/dqn/policy.pth" --policy "ppo" --eps 0.1 --min 0.02 --max 0.03 --steps 11 --test_num 10 --perfect_attack
+
+
 ACTIVATE VENV
 virtualenv venv --python=python3
 source venv/bin/activate
