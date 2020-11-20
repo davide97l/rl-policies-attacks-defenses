@@ -6,6 +6,8 @@ This repository implements some classic adversarial attack methods for deep rein
 - Critical strategy attack.
 - Adversarial policy attack [[link](https://arxiv.org/abs/1905.10615)].
 
+Most of this project is based on the RL framework [tianshou](https://github.com/thu-ml/tianshou) based on Pytorch. Image adversarial attacks are implemented with [advertorch](https://github.com/BorealisAI/advertorch), also based on Pytorch. A2C and PPO policies are instead based on [pytorch-a2c-ppo-acktr-gail](https://github.com/ikostrikov/pytorch-a2c-ppo-acktr-gail).
+
 ## Available models
 It also makes available trained models for different tasks which can be found in the folder `log`. The following table reports their average score for three different algorithms: DQN, A2C and PPO.
 
@@ -20,6 +22,10 @@ It also makes available trained models for different tasks which can be found in
 | SeaquestNoFrameskip-v4      | NA    | 1610  | 1798  |
 
 ## Usage
+Before start using this repository, install the required libraries in the `requirements.txt` file.
+```
+  pip install -r requirements.txt"
+```
 **Train** DQN agent to play Pong.
 ```
   python atari_dqn.py --task "PongNoFrameskip-v4"
@@ -48,7 +54,7 @@ It also makes available trained models for different tasks which can be found in
 ```
   python atari_dqn.py --task "PongNoFrameskip-v4" --invert_reward --epoch 1
 ```
-To learn how to perform adversarial attacks refer to the `example.ipynb` file and to the benchmark examples contained in the folder `benchmark`.
+To understand how to perform adversarial attacks refer to the `example.ipynb` file and to the benchmark examples contained in the folder `benchmark`.
 
 ## Test transferability over policies
 This section shows the performance of different adversarial attacks methods and their comparison between attacking an agent and 3 surrogate agents: one trained with the same policy and the others trained on a different algorithm.
