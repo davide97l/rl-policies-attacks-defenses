@@ -63,4 +63,4 @@ This section shows the performance of different adversarial attacks methods and 
 ![](results/dqn/dqn-pong-strategically_timed.png)
 ![](results/dqn/dqn-pong-adversarial_policy.png)
 ![](results/dqn/dqn-pong-critical_strategy.png)
-![](results/dqn/dqn-pong-critical_attack.png)
+![](results/dqn/dqn-pong-critical_point.png)
