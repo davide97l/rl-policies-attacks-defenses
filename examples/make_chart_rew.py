@@ -33,20 +33,20 @@ def limit_lists(limit_freq, x_lists, y_lists):
 if __name__ == '__main__':
 
     # Data
-    task = "Pong"  # Pong
+    task = "Breakout"  # Pong
     model = "ppo"
     n_lines = 4
     transfer_model = "ppo"
     transfer_model_2 = "dqn"
     transfer_model_3 = "a2c"
-    img_attack = "fgm_eps_0.1"  # fgm_eps_0.05, perfect_attack, fgm_eps_0.3
-    rl_attack = "adversarial_policy_attack"  # strategically_timed_attack, uniform_attack, critical_strategy_attack, critical_point_attack, adversarial_policy_attack
+    img_attack = "fgm_eps_0.03"  # fgm_eps_0.05, perfect_attack, fgm_eps_0.3
+    rl_attack = "critical_strategy_attack"  # strategically_timed_attack, uniform_attack, critical_strategy_attack, critical_point_attack, adversarial_policy_attack
     has_atk_freq = 1
     has_n_attacks = 0
     smoothing = 2
-    limit_freq = 0.18
-    min_freq = None
-    first_equal = True  # make first reward same as first line for all lines
+    limit_freq = 0.15
+    min_freq = 0.0
+    first_equal = False  # make first reward same as first line for all lines
     input_file = [
         "log/" + task + "NoFrameskip-v4/" + model + "/" + rl_attack + "_" + img_attack + ".npy",
         "log/" + task + "NoFrameskip-v4/" + model + "/" + rl_attack + "_" + img_attack + "_transf_" + transfer_model + ".npy",
@@ -101,7 +101,7 @@ if __name__ == '__main__':
             min_x = x[i][-1]
             min_index = i
         if first_equal:
-            rewards[i][0] = max(rewards[0][0], rewards[1][0], rewards[2][0])
+            rewards[i][0] = max(max(rewards[0]), max(rewards[1]), max(rewards[2]), max(rewards[3]))
 
     x_lists, y_lists = limit_lists(min_x, x1_lists, y1_lists)
     for i in range(0, n_lines):
