@@ -6,7 +6,7 @@ This repository implements some classic adversarial attack methods for deep rein
 - Critical strategy attack.
 - Adversarial policy attack [[link](https://arxiv.org/abs/1905.10615)].
 
-Most of this project is based on the RL framework [tianshou](https://github.com/thu-ml/tianshou) based on Pytorch. Image adversarial attacks are implemented with [advertorch](https://github.com/BorealisAI/advertorch), also based on Pytorch. A2C and PPO policies are instead based on [pytorch-a2c-ppo-acktr-gail](https://github.com/ikostrikov/pytorch-a2c-ppo-acktr-gail), DQN uses the tianshou implementation.
+Most of this project is based on the RL framework [tianshou](https://github.com/thu-ml/tianshou) based on Pytorch. Image adversarial attacks are implemented with [advertorch](https://github.com/BorealisAI/advertorch), also based on Pytorch. A2C and PPO policies are instead based on [pytorch-a2c-ppo-acktr-gail](https://github.com/ikostrikov/pytorch-a2c-ppo-acktr-gail), DQN uses the tianshou implementation. Any image adversarial attacks is compatible with this project. 
 
 ## Available models
 It also makes available trained models for different tasks which can be found in the folder `log`. The following table reports their average score for three different algorithms: DQN, A2C and PPO.
@@ -20,6 +20,22 @@ It also makes available trained models for different tasks which can be found in
 | MsPacmanNoFrameskip-v4      | 2787  | 2230  | 1929  |
 | SpaceInvadersNoFrameskip-v4 | 640   | 856   | 1120  |
 | SeaquestNoFrameskip-v4      | NA    | 1610  | 1798  |
+
+## Image adversarial attacks effectiveness
+The following table shows the **succeed ratio** of some common **image adversarial attacks** methods attacking observations taken from different Atari games environment. (U) and (T) mean that attacks have been performed under **untargeted** and **targeted** settings respectively. The victim agent is a PPO model.
+- GSM: Gradient Sign Method (eps=0.01) [[link](https://arxiv.org/abs/1412.6572)]
+- PGDA: Projected Gradient Descent Attack (eps=0.01, iter=100) [[link](https://arxiv.org/pdf/1706.06083.pdf)]
+- CW: Carlini&Wagner (iter=100) [[link](https://arxiv.org/abs/1608.04644)]
+
+| environment                 | GSM (U) | GSM (T) | PGDA (T) | CW (T) |
+|-----------------------------|------|-------|-------|-------|
+| PongNoFrameskip-v4          | 1    | 0.5   | 0.99 | 0.72 |
+| BreakoutNoFrameskip-v4      | 0.98 | 0.4   | 0.83 | 0.47 |
+| EnduroNoFrameskip-v4        | 1    | 0.34  | 0.37 | 0.3  |
+| QbertNoFrameskip-v4         | 1    | 0.34  | 0.5  | 0.47 |
+| MsPacmanNoFrameskip-v4      | 1    | 0.45  | 0.35 | 0.34 |
+| SpaceInvadersNoFrameskip-v4 | 0.99 | 0.54  | 0.67 | 0.26 |
+| SeaquestNoFrameskip-v4      | 1    | 0.8   | 0.5  | 0.4  |
 
 ## Usage
 Before start using this repository, install the required libraries in the `requirements.txt` file.
