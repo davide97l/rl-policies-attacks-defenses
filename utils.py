@@ -88,7 +88,7 @@ def make_policy(args, policy_type, resume_path):
 
 
 def make_img_adv_attack(args, adv_net, min_pixel=0., max_pixel=255., targeted=False):
-    assert args.image_attack in ["fgm", "cw"] or args.perfect_attack
+    assert args.image_attack in ["fgm", "cw", "pgda"] or args.perfect_attack
     obs_adv_atk, atk_type = None, None
     if args.perfect_attack:
         atk_type = "perfect_attack"
@@ -101,6 +101,10 @@ def make_img_adv_attack(args, adv_net, min_pixel=0., max_pixel=255., targeted=Fa
                                             max_iterations=args.iterations,
                                             clip_min=min_pixel, clip_max=max_pixel, targeted=targeted)
         atk_type = "cw_iter_" + str(args.iterations)
+    elif args.image_attack == "pgda":
+        obs_adv_atk = PGDAttack(adv_net, eps=args.eps*max_pixel, targeted=targeted,
+                                clip_min=min_pixel, clip_max=max_pixel, nb_iter=args.iterations,
+                                eps_iter=args.eps*max_pixel)
     return obs_adv_atk, atk_type
 
 
