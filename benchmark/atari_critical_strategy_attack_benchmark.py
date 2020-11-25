@@ -17,7 +17,6 @@ def get_args():
     parser.add_argument('--max-grad-norm', type=float, default=0.5)  # only a2c and ppo
     parser.add_argument('--target_update_freq', type=int, default=500)
     parser.add_argument('--test_num', type=int, default=10)
-    parser.add_argument('--render', type=float, default=0.)
     parser.add_argument(
         '--device', type=str,
         default='cuda' if torch.cuda.is_available() else 'cpu')

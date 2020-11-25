@@ -106,7 +106,10 @@ class critical_strategy_attack_collector(base_attack_collector):
             actions = [a for a in range(int(action_shape))]
         atk_strategies = [p for p in itertools.product(actions, repeat=self.n // self.repeat_adv_act)]  # define attack strategies
         atk_strategies = np.repeat(atk_strategies, self.repeat_adv_act, axis=-1)
-        env = copy.deepcopy(self.env)  # copy the environment
+        if isinstance(self.env, gym.wrappers.Monitor):
+            env = copy.deepcopy(self.env.env)  # copy the environment
+        else:
+            env = copy.deepcopy(self.env)
         self.store_env_state(self.env)  # store the state of the environment
         env = self.load_env_state(env)  # restore the state of the environment
         adv_acts = []  # actions of the best adversarial policy

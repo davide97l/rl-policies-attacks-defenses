@@ -131,3 +131,4 @@ dmypy.json
 .idea
 log_3/
 example.py
+benchmark/frequent_commands.txt
