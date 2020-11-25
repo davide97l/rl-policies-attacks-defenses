@@ -1,4 +1,8 @@
 # Tianshou Reinforcement Learning Adversarial Attacks
+DQN Policy             |  DQN Policy under attack
+:-------------------------:|:-------------------------:
+ ![](pong_dqn.gif) | ![](pong_strategically_attack.gif)
+
 This repository implements some classic adversarial attack methods for deep reinforcement learning agents including:
 - Uniform attack [[link](https://arxiv.org/abs/1702.02284)].
 - Strategical timed attack [[link](https://www.ijcai.org/Proceedings/2017/0525.pdf)].
