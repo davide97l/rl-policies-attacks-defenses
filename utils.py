@@ -6,6 +6,8 @@ from advertorch.attacks import *
 from atari_wrapper import wrap_deepmind
 import os
 import copy
+from defended_models.radial_dqn.model import CnnDQN
+from tianshou.data import Batch
 
 
 class TianshouNetAdapter(nn.Module):
@@ -37,6 +39,41 @@ class A2CPPONetAdapter(nn.Module):
         return dist.logits
 
 
+class RadialDQNNetAdapter(nn.Module):
+    """
+    Adapt the output of RadialDQN net to Advertorch required output (logits)."""
+    def __init__(self, policy):
+        super().__init__()
+        self.net = policy
+
+    def forward(self, s):
+        return self.net(s)
+
+
+class RadialDQNPolicyAdapter(nn.Module):
+    """
+    Adapt the output of RadialDQN policy to Tianshou required format."""
+    def __init__(self, policy, device):
+        super().__init__()
+        self.policy = policy
+        self.device = device
+
+    def forward(self, inputs, last_state=None):
+        #print(inputs)
+        obs = inputs.obs
+        if not isinstance(obs, torch.Tensor):
+            obs = torch.tensor(obs, device=self.device, dtype=torch.float32)
+        #obs = obs.unsqueeze(0)
+        logits = self.policy(obs)
+        action = torch.argmax(logits)
+        #print(logits)
+        #print(action)
+        return Batch(logits=logits, act=[action], state=None)
+
+    def act(self, s, epsilon):
+        return self.act(s, epsilon)
+
+
 def make_dqn(args):
     """Make a DQN policy
     :return: policy"""
@@ -44,7 +81,7 @@ def make_dqn(args):
               args.action_shape, args.device).to(args.device)
     policy = DQNPolicy(net, None, args.gamma, args.n_step,
                        target_update_freq=args.target_update_freq)
-    policy.set_eps(0)
+    policy.set_eps(0.005)
     return policy
 
 
@@ -64,10 +101,20 @@ def make_ppo(args, resume_path):
     return actor_critic
 
 
+def make_radqn(args, resume_path):
+    """Make a Radial-DQN policy
+    :return: policy"""
+    policy = CnnDQN(args.state_shape, args.action_shape).to(args.device)
+    if resume_path:
+        policy.load_state_dict(torch.load(resume_path))
+    print("Loaded agent from: ", resume_path)
+    return policy
+
+
 def make_policy(args, policy_type, resume_path):
     """Make a 'policy_type' policy
     :return: policy"""
-    assert policy_type in ["dqn", "a2c", "ppo"]
+    assert policy_type in ["dqn", "a2c", "ppo", "radqn"]
     policy = None
     if policy_type == "dqn":
         policy = make_dqn(args)
@@ -77,13 +124,14 @@ def make_policy(args, policy_type, resume_path):
     if policy_type == "ppo":
         assert resume_path is not None
         policy = make_ppo(args, resume_path)
+    if policy_type == "radqn":
+        assert resume_path is not None
+        policy = make_radqn(args, resume_path)
     if resume_path:
-        if policy_type == "dqn":
+        if policy_type in ["dqn"]:
             policy.load_state_dict(torch.load(resume_path))
         print("Loaded agent from: ", resume_path)
     policy.eval()
-    if hasattr(policy, 'eps'):
-        policy.set_eps(0.005)
     return policy
 
 
@@ -119,6 +167,8 @@ def make_victim_network(args, policy):
         adv_net = TianshouNetAdapter(copy.deepcopy(policy)).to(args.device)
     elif args.target_policy in ['a2c', 'ppo']:
         adv_net = A2CPPONetAdapter(copy.deepcopy(policy)).to(args.device)
+    if args.policy == 'radqn':
+        adv_net = RadialDQNNetAdapter(copy.deepcopy(policy)).to(args.device)
     adv_net.eval()
     return adv_net
 
