@@ -91,8 +91,12 @@ def benchmark_adversarial_policy(args=get_args()):
               "| n_succ_atks (%)", test_adversarial_policy['succ_atks(%)'],
               "| reward: ", rewards[-1])
         # pprint.pprint(test_adversarial_policy)
-    log_path = os.path.join(args.logdir, args.task, args.policy,
-                            "uniform_attack_" + atk_type + ".npy")
+    if "defended" in args.resume_path:
+        log_path = os.path.join(args.logdir, args.task, args.policy,
+                                "uniform_attack_" + atk_type + "_defended.npy")
+    else:
+        log_path = os.path.join(args.logdir, args.task, args.policy,
+                                "uniform_attack_" + atk_type + ".npy")
 
     # save results
     with open(log_path, 'wb') as f:
