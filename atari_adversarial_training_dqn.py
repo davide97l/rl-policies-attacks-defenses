@@ -8,11 +8,11 @@ from torch.utils.tensorboard import SummaryWriter
 from tianshou.policy import DQNPolicy
 from tianshou.env import SubprocVectorEnv
 from net.discrete_net import DQN
-from tianshou.trainer import offpolicy_trainer
+from drl_defenses.off_policy_trainer import offpolicy_trainer
 from tianshou.data import Collector, ReplayBuffer
 from drl_defenses.adv_training import adversarial_training_collector
-from atari_wrapper import wrap_deepmind, InverseReward
-from utils import make_policy, make_img_adv_attack, make_atari_env_watch, make_victim_network
+from atari_wrapper import wrap_deepmind
+from utils import make_img_adv_attack, make_atari_env_watch, make_victim_network
 
 
 def get_args():
@@ -45,6 +45,8 @@ def get_args():
     parser.add_argument('--image_attack', type=str, default='fgm')  # fgm, cw, pgda
     parser.add_argument('--eps', type=float, default=0.1)
     parser.add_argument('--iterations', type=int, default=10)
+    parser.add_argument('--succ_atk_threshold', type=float, default=0.1)
+    parser.add_argument('--atk_freq', type=float, default=1.)
     return parser.parse_args()
 
 
@@ -53,7 +55,7 @@ def make_atari_env(args):
     return environment
 
 
-# python atari_adversarial_training_dqn.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --logdir log_def --eps 0.01 --image_attack fgm
+# python atari_adversarial_training_dqn.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --logdir log_def --eps 0.01 --image_attack fgm --succ_atk_threshold 0.1
 def test_dqn(args=get_args()):
     env = make_atari_env(args)
     args.state_shape = env.observation_space.shape or env.observation_space.n
@@ -87,7 +89,7 @@ def test_dqn(args=get_args()):
 
     buffer = ReplayBuffer(args.buffer_size, ignore_obs_next=True)
     # collector
-    train_collector = adversarial_training_collector(policy, env, adv_atk, buffer)
+    train_collector = adversarial_training_collector(policy, env, adv_atk, buffer, atk_frequency=args.atk_freq)
     test_collector = Collector(policy, test_envs)
     # log
     log_path = os.path.join(args.logdir, args.task, 'dqn')
@@ -97,10 +99,7 @@ def test_dqn(args=get_args()):
         torch.save(policy.state_dict(), os.path.join(log_path, 'policy.pth'))
 
     def stop_fn(x):
-        if env.env.spec.reward_threshold:
-            return x >= env.spec.reward_threshold
-        elif 'Pong' in args.task:
-            return x >= 20
+        return x <= args.succ_atk_threshold
 
     def train_fn(epoch, env_step):
         # nature DQN setting, linear decay in the first 1M steps

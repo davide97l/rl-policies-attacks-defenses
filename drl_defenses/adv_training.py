@@ -8,64 +8,31 @@ from numbers import Number
 from typing import Dict, List, Union, Optional, Callable
 from advertorch.attacks.base import Attack
 from tianshou.policy import BasePolicy
-from tianshou.exploration import BaseNoise
-from tianshou.data.batch import _create_value
 from tianshou.env import BaseVectorEnv, DummyVectorEnv
 from tianshou.data import Batch, ReplayBuffer, ListReplayBuffer, to_numpy
 import random as rd
 
 
 class adversarial_training_collector(object):
-    """Collector enables the policy to interact with different types of envs.
+    """Collector that defends an existing policy with adversarial training.
     :param policy: an instance of the :class:`~tianshou.policy.BasePolicy`
         class.
     :param env: a ``gym.Env`` environment or an instance of the
         :class:`~tianshou.env.BaseVectorEnv` class.
+    :param obs_adv_atk: an instance of the :class:`~advertorch.attacks.base.Attack`
+        class implementing an image adversarial attack.
     :param buffer: an instance of the :class:`~tianshou.data.ReplayBuffer`
         class. If set to ``None`` (testing phase), it will not store the data.
     :param function preprocess_fn: a function called before the data has been
         added to the buffer, see issue #42 and :ref:`preprocess_fn`, defaults
         to None.
-    :param BaseNoise action_noise: add a noise to continuous action. Normally
-        a policy already has a noise param for exploration in training phase,
-        so this is recommended to use in test collector for some purpose.
     :param function reward_metric: to be used in multi-agent RL. The reward to
         report is of shape [agent_num], but we need to return a single scalar
         to monitor training. This function specifies what is the desired
         metric, e.g., the reward of agent 1 or the average reward over all
         agents. By default, the behavior is to select the reward of agent 1.
-    The ``preprocess_fn`` is a function called before the data has been added
-    to the buffer with batch format, which receives up to 7 keys as listed in
-    :class:`~tianshou.data.Batch`. It will receive with only ``obs`` when the
-    collector resets the environment. It returns either a dict or a
-    :class:`~tianshou.data.Batch` with the modified keys and values. Examples
-    are in "test/base/test_collector.py".
-    Here is the example:
-    ::
-        policy = PGPolicy(...)  # or other policies if you wish
-        env = gym.make('CartPole-v0')
-        replay_buffer = ReplayBuffer(size=10000)
-        # here we set up a collector with a single environment
-        collector = Collector(policy, env, buffer=replay_buffer)
-        # the collector supports vectorized environments as well
-        envs = DummyVectorEnv([lambda: gym.make('CartPole-v0')
-                               for _ in range(3)])
-        collector = Collector(policy, envs, buffer=replay_buffer)
-        # collect 3 episodes
-        collector.collect(n_episode=3)
-        # collect 1 episode for the first env, 3 for the third env
-        collector.collect(n_episode=[1, 0, 3])
-        # collect at least 2 steps
-        collector.collect(n_step=2)
-        # collect episodes with visual rendering (the render argument is the
-        #   sleep time between rendering consecutive frames)
-        collector.collect(n_episode=1, render=0.03)
-    Collected data always consist of full episodes. So if only ``n_step``
-    argument is give, the collector may return the data more than the
-    ``n_step`` limitation. Same as ``n_episode`` for the multiple environment
-    case.
-    .. note::
-        Please make sure the given environment has a time limitation.
+    :param atk_frequency: float, how frequently attacking env observations.
+    Note: parallel or async envs are currently not supported
     """
 
     def __init__(
@@ -75,7 +42,6 @@ class adversarial_training_collector(object):
         obs_adv_atk: Attack,
         buffer: Optional[ReplayBuffer] = None,
         preprocess_fn: Optional[Callable[..., Batch]] = None,
-        action_noise: Optional[BaseNoise] = None,
         reward_metric: Optional[Callable[[np.ndarray], float]] = None,
         atk_frequency: float = 0.5,
         device: str = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -87,15 +53,12 @@ class adversarial_training_collector(object):
         self.env_num = len(env)
         self.device = device
         self.obs_adv_atk = obs_adv_atk
+        self.obs_adv_atk.targeted = False
         self.atk_frequency = atk_frequency
-        self.action_space = self.env.action_space[0].shape or self.env.action_space[0].n
         # environments that are available in step()
         # this means all environments in synchronous simulation
         # but only a subset of environments in asynchronous simulation
         self._ready_env_ids = np.arange(self.env_num)
-        # self.async is a flag to indicate whether this collector works
-        # with asynchronous simulation
-        self.is_async = env.is_async
         # need cache buffers before storing in the main buffer
         self._cached_buf = [ListReplayBuffer() for _ in range(self.env_num)]
         self.buffer = buffer
@@ -103,7 +66,6 @@ class adversarial_training_collector(object):
         self.preprocess_fn = preprocess_fn
         self.process_fn = policy.process_fn
         self._action_space = env.action_space
-        self._action_noise = action_noise
         self._rew_metric = reward_metric or adversarial_training_collector._default_rew_metric
         # avoid creating attribute outside __init__
         self.reset()
@@ -129,8 +91,6 @@ class adversarial_training_collector(object):
         self.reset_env()
         self.reset_buffer()
         self.reset_stat()
-        if self._action_noise is not None:
-            self._action_noise.reset()
 
     def reset_stat(self) -> None:
         """Reset the statistic variables."""
@@ -343,15 +303,13 @@ class adversarial_training_collector(object):
 
     def obs_attacks(self,
                     data,
-                    target_action: Optional[List[int]] = None,
+                    target_action: List[int]
                     ):
         """
         Performs an image adversarial attack on the observation stored in 'obs' respect to
         the action 'target_action' using the method defined in 'self.obs_adv_atk'
         """
         data = deepcopy(data)
-        if not target_action:
-            target_action = data.act
         obs = torch.FloatTensor(data.obs).to(self.device)  # convert observation to tensor
         act = torch.tensor(target_action).to(self.device)  # convert action to tensor
         adv_obs = self.obs_adv_atk.perturb(obs, act)  # create adversarial observation
