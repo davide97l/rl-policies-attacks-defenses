@@ -10,8 +10,9 @@ from tianshou.env import SubprocVectorEnv
 from net.discrete_net import DQN
 from tianshou.trainer import offpolicy_trainer
 from tianshou.data import Collector, ReplayBuffer
-
+from drl_defenses.adv_training import adversarial_training_collector
 from atari_wrapper import wrap_deepmind, InverseReward
+from utils import make_policy, make_img_adv_attack, make_atari_env_watch, make_victim_network
 
 
 def get_args():
@@ -19,8 +20,8 @@ def get_args():
     parser.add_argument('--task', type=str, default='PongNoFrameskip-v4')
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--eps_test', type=float, default=0.005)
-    parser.add_argument('--eps_train', type=float, default=1.)
-    parser.add_argument('--eps_train_final', type=float, default=0.05)
+    parser.add_argument('--eps_train', type=float, default=0.01)
+    parser.add_argument('--eps_train_final', type=float, default=0.01)
     parser.add_argument('--buffer-size', type=int, default=100000)
     parser.add_argument('--lr', type=float, default=0.0001)
     parser.add_argument('--gamma', type=float, default=0.99)
@@ -41,26 +42,18 @@ def get_args():
     parser.add_argument('--resume_path', type=str, default=None)
     parser.add_argument('--watch', default=False, action='store_true',
                         help='watch the play of pre-trained policy only')
-    parser.add_argument('--invert_reward', default=False, action='store_true',
-                        help="rew'=-rew")
+    parser.add_argument('--image_attack', type=str, default='fgm')  # fgm, cw, pgda
+    parser.add_argument('--eps', type=float, default=0.1)
+    parser.add_argument('--iterations', type=int, default=10)
     return parser.parse_args()
 
 
 def make_atari_env(args):
     environment = wrap_deepmind(args.task, frame_stack=args.frames_stack)
-    if args.invert_reward:
-        environment = InverseReward(environment)
     return environment
 
 
-def make_atari_env_watch(args):
-    environment = wrap_deepmind(args.task, frame_stack=args.frames_stack,
-                                episode_life=False, clip_rewards=False)
-    if args.invert_reward:
-        environment = InverseReward(environment)
-    return environment
-
-
+# python atari_adversarial_training_dqn.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --logdir log_def --eps 0.01 --image_attack fgm
 def test_dqn(args=get_args()):
     env = make_atari_env(args)
     args.state_shape = env.observation_space.shape or env.observation_space.n
@@ -69,14 +62,11 @@ def test_dqn(args=get_args()):
     print("Observations shape: ", args.state_shape)
     print("Actions shape: ", args.action_shape)
     # make environments
-    train_envs = SubprocVectorEnv([lambda: make_atari_env(args)
-                                   for _ in range(args.training_num)])
     test_envs = SubprocVectorEnv([lambda: make_atari_env_watch(args)
                                   for _ in range(args.test_num)])
     # seed
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
-    train_envs.seed(args.seed)
     test_envs.seed(args.seed)
     # define model
     net = DQN(*args.state_shape,
@@ -89,9 +79,15 @@ def test_dqn(args=get_args()):
     if args.resume_path:
         policy.load_state_dict(torch.load(args.resume_path))
         print("Loaded agent from: ", args.resume_path)
+
+    args.target_policy, args.policy = "dqn", "dqn"
+    args.perfect_attack = False
+    adv_net = make_victim_network(args, policy)
+    adv_atk, _ = make_img_adv_attack(args, adv_net, targeted=False)
+
     buffer = ReplayBuffer(args.buffer_size, ignore_obs_next=True)
     # collector
-    train_collector = Collector(policy, train_envs, buffer)
+    train_collector = adversarial_training_collector(policy, env, adv_atk, buffer)
     test_collector = Collector(policy, test_envs)
     # log
     log_path = os.path.join(args.logdir, args.task, 'dqn')
