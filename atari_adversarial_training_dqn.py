@@ -27,7 +27,7 @@ def get_args():
     parser.add_argument('--gamma', type=float, default=0.99)
     parser.add_argument('--n_step', type=int, default=3)
     parser.add_argument('--target_update_freq', type=int, default=500)
-    parser.add_argument('--epoch', type=int, default=100)
+    parser.add_argument('--epoch', type=int, default=20)
     parser.add_argument('--step_per_epoch', type=int, default=10000)
     parser.add_argument('--collect_per_step', type=int, default=10)
     parser.add_argument('--batch_size', type=int, default=32)
@@ -43,9 +43,8 @@ def get_args():
     parser.add_argument('--watch', default=False, action='store_true',
                         help='watch the play of pre-trained policy only')
     parser.add_argument('--image_attack', type=str, default='fgm')  # fgm, cw, pgda
-    parser.add_argument('--eps', type=float, default=0.1)
+    parser.add_argument('--eps', type=float, default=0.01)
     parser.add_argument('--iterations', type=int, default=10)
-    parser.add_argument('--succ_atk_threshold', type=float, default=0.1)
     parser.add_argument('--atk_freq', type=float, default=1.)
     return parser.parse_args()
 
@@ -55,7 +54,7 @@ def make_atari_env(args):
     return environment
 
 
-# python atari_adversarial_training_dqn.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --logdir log_def --eps 0.01 --image_attack fgm --succ_atk_threshold 0.1
+# python atari_adversarial_training_dqn.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --logdir log_def --eps 0.01 --image_attack fgm
 def test_dqn(args=get_args()):
     env = make_atari_env(args)
     args.state_shape = env.observation_space.shape or env.observation_space.n
@@ -64,8 +63,10 @@ def test_dqn(args=get_args()):
     print("Observations shape: ", args.state_shape)
     print("Actions shape: ", args.action_shape)
     # make environments
+    train_envs = SubprocVectorEnv([lambda: make_atari_env(args)
+                                  for _ in range(args.training_num)])
     test_envs = SubprocVectorEnv([lambda: make_atari_env_watch(args)
-                                  for _ in range(args.test_num)])
+                                  for _ in range(1)])
     # seed
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -89,17 +90,17 @@ def test_dqn(args=get_args()):
 
     buffer = ReplayBuffer(args.buffer_size, ignore_obs_next=True)
     # collector
-    train_collector = adversarial_training_collector(policy, env, adv_atk, buffer, atk_frequency=args.atk_freq)
-    test_collector = Collector(policy, test_envs)
+    train_collector = adversarial_training_collector(policy, train_envs, adv_atk, buffer, atk_frequency=args.atk_freq)
+    test_collector = adversarial_training_collector(policy, test_envs, adv_atk, buffer, atk_frequency=args.atk_freq, test=True)
     # log
     log_path = os.path.join(args.logdir, args.task, 'dqn')
     writer = SummaryWriter(log_path)
 
-    def save_fn(policy):
-        torch.save(policy.state_dict(), os.path.join(log_path, 'policy.pth'))
+    def save_fn(policy, policy_name='policy.pth'):
+        torch.save(policy.state_dict(), os.path.join(log_path, policy_name))
 
     def stop_fn(x):
-        return x <= args.succ_atk_threshold
+        return 0
 
     def train_fn(epoch, env_step):
         # nature DQN setting, linear decay in the first 1M steps

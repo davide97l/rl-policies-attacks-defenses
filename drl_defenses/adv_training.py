@@ -44,6 +44,7 @@ class adversarial_training_collector(object):
         preprocess_fn: Optional[Callable[..., Batch]] = None,
         reward_metric: Optional[Callable[[np.ndarray], float]] = None,
         atk_frequency: float = 0.5,
+        test: bool = False,
         device: str = 'cuda' if torch.cuda.is_available() else 'cpu'
     ) -> None:
         super().__init__()
@@ -55,6 +56,7 @@ class adversarial_training_collector(object):
         self.obs_adv_atk = obs_adv_atk
         self.obs_adv_atk.targeted = False
         self.atk_frequency = atk_frequency
+        self.test = test
         # environments that are available in step()
         # this means all environments in synchronous simulation
         # but only a subset of environments in asynchronous simulation
@@ -218,10 +220,13 @@ class adversarial_training_collector(object):
             if x < self.atk_frequency:
                 ori_act = self.data.act
                 adv_act, adv_obs = self.obs_attacks(self.data, ori_act)
-                if adv_act != ori_act:
-                    succ_attacks += 1
-                n_attacks += 1
+                for j, i in enumerate(self._ready_env_ids):
+                    if adv_act[i] != ori_act[i]:
+                        succ_attacks += 1
+                n_attacks += self.env_num
                 self.data.update(obs=adv_obs)  # so that the adv obs will be inserted in the buffer
+                if self.test:
+                    self.data.act = adv_act
 
             # step in env
             obs_next, rew, done, info = self.env.step(self.data.act)
@@ -241,7 +246,12 @@ class adversarial_training_collector(object):
             for j, i in enumerate(self._ready_env_ids):
                 # j is the index in current ready_env_ids
                 # i is the index in all environments
-                self._cached_buf[i].add(**self.data[j])
+                if self.buffer is None:
+                    # users do not want to store data, so we store
+                    # small fake data here to make the code clean
+                    self._cached_buf[i].add(obs=0, act=0, rew=rew[j], done=0)
+                else:
+                    self._cached_buf[i].add(**self.data[j])
 
                 if done[j]:
                     if not (isinstance(n_episode, list)
@@ -250,7 +260,8 @@ class adversarial_training_collector(object):
                         rewards.append(self._rew_metric(
                             np.sum(self._cached_buf[i].rew, axis=0)))
                         step_count += len(self._cached_buf[i])
-                        self.buffer.update(self._cached_buf[i])
+                        if self.buffer is not None:
+                            self.buffer.update(self._cached_buf[i])
                         if isinstance(n_episode, list) and \
                                 episode_count[i] >= n_episode[i]:
                             # env i has collected enough data, it has finished

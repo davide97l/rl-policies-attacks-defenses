@@ -70,6 +70,7 @@ def offpolicy_trainer(
     """
     env_step, gradient_step = 0, 0
     best_epoch, best_reward, best_reward_std = -1, -1.0, 0.0
+    best_defense = 1.  # lower values mean better defense rate
     stat: Dict[str, MovAvg] = {}
     start_time = time.time()
     train_collector.reset_stat()
@@ -100,7 +101,7 @@ def offpolicy_trainer(
                     for k in result.keys():
                         writer.add_scalar(
                             "train/" + k, result[k], global_step=env_step)
-                if test_in_train and stop_fn and stop_fn(result['succ_atks(%)']):
+                if test_in_train and stop_fn and stop_fn(result['rew']):
                     test_result = test_episode(
                         policy, test_collector, test_fn,
                         epoch, episode_per_test, writer, env_step)
@@ -134,18 +135,23 @@ def offpolicy_trainer(
         # test
         result = test_episode(policy, test_collector, test_fn, epoch,
                               episode_per_test, writer, env_step)
-        if best_epoch == -1 or best_reward < result["rew"]:
+        if best_epoch == -1 or best_reward <= result["rew"]:
             best_reward, best_reward_std = result["rew"], result["rew_std"]
             best_epoch = epoch
             if save_fn:
-                save_fn(policy)
+                save_fn(policy, 'policy_best_reward.pth')
+        if result["succ_atks(%)"] <= best_defense:
+            best_defense = result["succ_atks(%)"]
+            if save_fn:
+                save_fn(policy, 'policy_best_defence.pth')
         if verbose:
             print(f"Epoch #{epoch}: test_reward: {result['rew']:.6f} ± "
                   f"{result['rew_std']:.6f}, best_reward: {best_reward:.6f} ± "
                   f"{best_reward_std:.6f} in #{best_epoch}, "
-                  f"succ_atk: {result['succ_atks(%)']:.6f}"
                   )
-        if stop_fn and stop_fn(result['succ_atks(%)']):
+        if stop_fn and stop_fn(result['rew']):
             break
+    if save_fn:
+        save_fn(policy, 'policy_last.pth')
     return gather_info(start_time, train_collector, test_collector,
                        best_reward, best_reward_std)
