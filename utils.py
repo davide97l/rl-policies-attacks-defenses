@@ -67,18 +67,18 @@ def make_ppo(args, resume_path):
 def make_policy(args, policy_type, resume_path):
     """Make a 'policy_type' policy
     :return: policy"""
-    assert policy_type in ["dqn", "a2c", "ppo"]
-    policy = None
-    if policy_type == "dqn":
+    if "dqn" in policy_type:
         policy = make_dqn(args)
-    if policy_type == "a2c":
+    elif "a2c" in policy_type:
         assert resume_path is not None
         policy = make_a2c(args, resume_path)
-    if policy_type == "ppo":
+    elif "ppo" in policy_type:
         assert resume_path is not None
         policy = make_ppo(args, resume_path)
+    else:
+        raise Exception("'{}' policy not supported or doesn't exist".format(policy_type))
     if resume_path:
-        if policy_type == "dqn":
+        if "dqn" in policy_type:
             policy.load_state_dict(torch.load(resume_path))
         print("Loaded agent from: ", resume_path)
     policy.eval()
@@ -110,6 +110,12 @@ def make_img_adv_attack(args, adv_net, min_pixel=0., max_pixel=255., targeted=Fa
 
 
 def make_victim_network(args, policy):
+    if 'dqn' in args.policy:
+        args.policy = 'dqn'
+    if 'a2c' in args.policy:
+        args.policy = 'a2c'
+    if 'ppo' in args.policy:
+        args.policy = 'ppo'
     if args.target_policy is None:
         if args.policy == 'dqn':
             adv_net = TianshouNetAdapter(copy.deepcopy(policy)).to(args.device)

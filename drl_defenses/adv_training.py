@@ -21,6 +21,8 @@ class adversarial_training_collector(object):
         :class:`~tianshou.env.BaseVectorEnv` class.
     :param obs_adv_atk: an instance of the :class:`~advertorch.attacks.base.Attack`
         class implementing an image adversarial attack.
+    :param atk_frequency: float, how frequently attacking env observations
+    :param test: bool, if True adversarial actions replace original actions
     :param buffer: an instance of the :class:`~tianshou.data.ReplayBuffer`
         class. If set to ``None`` (testing phase), it will not store the data.
     :param function preprocess_fn: a function called before the data has been

@@ -13,6 +13,7 @@ from tianshou.data import Collector, ReplayBuffer
 from drl_defenses.adv_training import adversarial_training_collector
 from atari_wrapper import wrap_deepmind
 from utils import make_img_adv_attack, make_atari_env_watch, make_victim_network
+import copy
 
 
 def get_args():
@@ -46,6 +47,8 @@ def get_args():
     parser.add_argument('--eps', type=float, default=0.01)
     parser.add_argument('--iterations', type=int, default=10)
     parser.add_argument('--atk_freq', type=float, default=1.)
+    parser.add_argument('--target_model_path', type=str, default=None,
+                        help='model to base image adversarial attacks on')  # used for testing (i.e. log/PongNoFrameskip-v4/dqn/policy.pth)
     return parser.parse_args()
 
 
@@ -54,7 +57,6 @@ def make_atari_env(args):
     return environment
 
 
-# python atari_adversarial_training_dqn.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --logdir log_def --eps 0.01 --image_attack fgm
 def test_dqn(args=get_args()):
     env = make_atari_env(args)
     args.state_shape = env.observation_space.shape or env.observation_space.n
@@ -83,15 +85,24 @@ def test_dqn(args=get_args()):
         policy.load_state_dict(torch.load(args.resume_path))
         print("Loaded agent from: ", args.resume_path)
 
+    if args.target_model_path:
+        victim_policy = copy.deepcopy(policy)
+        victim_policy.load_state_dict(torch.load(args.target_model_path))
+        print("Loaded victim agent from: ", args.target_model_path)
+    else:
+        victim_policy = policy
+
     args.target_policy, args.policy = "dqn", "dqn"
     args.perfect_attack = False
-    adv_net = make_victim_network(args, policy)
+    adv_net = make_victim_network(args, victim_policy)
     adv_atk, _ = make_img_adv_attack(args, adv_net, targeted=False)
 
     buffer = ReplayBuffer(args.buffer_size, ignore_obs_next=True)
     # collector
-    train_collector = adversarial_training_collector(policy, train_envs, adv_atk, buffer, atk_frequency=args.atk_freq)
-    test_collector = adversarial_training_collector(policy, test_envs, adv_atk, buffer, atk_frequency=args.atk_freq, test=True)
+    train_collector = adversarial_training_collector(policy, train_envs, adv_atk, buffer,
+                                                     atk_frequency=args.atk_freq, device=args.device)
+    test_collector = adversarial_training_collector(policy, test_envs, adv_atk, buffer, atk_frequency=args.atk_freq,
+                                                    test=True, device=args.device)
     # log
     log_path = os.path.join(args.logdir, args.task, 'dqn')
     writer = SummaryWriter(log_path)
@@ -118,12 +129,13 @@ def test_dqn(args=get_args()):
 
     # watch agent's performance
     def watch():
+        assert args.victim_model is not None
         print("Testing agent ...")
         policy.eval()
         policy.set_eps(args.eps_test)
         test_envs.seed(args.seed)
         test_collector.reset()
-        result = test_collector.collect(n_episode=[1] * args.test_num,
+        result = test_collector.collect(n_episode=[args.test_num],
                                         render=args.render)
         pprint.pprint(result)
 

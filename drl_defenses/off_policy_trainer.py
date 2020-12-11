@@ -139,19 +139,13 @@ def offpolicy_trainer(
             best_reward, best_reward_std = result["rew"], result["rew_std"]
             best_epoch = epoch
             if save_fn:
-                save_fn(policy, 'policy_best_reward.pth')
-        if result["succ_atks(%)"] <= best_defense:
-            best_defense = result["succ_atks(%)"]
-            if save_fn:
-                save_fn(policy, 'policy_best_defence.pth')
+                save_fn(policy, 'policy.pth')
         if verbose:
             print(f"Epoch #{epoch}: test_reward: {result['rew']:.6f} ± "
                   f"{result['rew_std']:.6f}, best_reward: {best_reward:.6f} ± "
-                  f"{best_reward_std:.6f} in #{best_epoch}, "
+                  f"{best_reward_std:.6f} in #{best_epoch}, test defense: {result['succ_atks(%)']:.3f} "
                   )
         if stop_fn and stop_fn(result['rew']):
             break
-    if save_fn:
-        save_fn(policy, 'policy_last.pth')
     return gather_info(start_time, train_collector, test_collector,
                        best_reward, best_reward_std)
