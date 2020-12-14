@@ -52,8 +52,8 @@ def main():
     else:
         actor_critic = make_policy(args, args.algo, args.resume_path)
 
-    assert args.resume_path is not None, \
-        "You are training with adversarial training but you haven't declared a base trained model"
+    #assert args.resume_path is not None, \
+    #    "You are training with adversarial training but you haven't declared a base trained model"
 
     if args.target_model_path:
         victim_policy = make_policy(args, args.algo, args.target_model_path)
@@ -108,8 +108,8 @@ def main():
         watch()
         exit(0)
 
-    if args.resume_path is not None:
-        args.rms_eps = 0.1
+    #if args.resume_path is not None:
+        #args.rms_eps = 0.1
 
     if args.algo == 'a2c':
         agent = algo.A2C_ACKTR(
@@ -153,6 +153,7 @@ def main():
     print("start training")
     succ_attacks = 0
     n_attacks = 0
+    original_actor_critic = copy.deepcopy(actor_critic)
     for j in range(num_updates):
 
         if args.use_linear_lr_decay:
@@ -161,6 +162,24 @@ def main():
                 agent.optimizer, j, num_updates,
                 agent.optimizer.lr if args.algo == "acktr" else args.lr)
         for step in range(args.num_steps):
+
+            # Sample actions
+            with torch.no_grad():
+                value, action, action_log_prob, recurrent_hidden_states = actor_critic.act(
+                    rollouts.obs[step], rollouts.recurrent_hidden_states[step],
+                    rollouts.masks[step])
+
+            # START ADVERSARIAL ATTACK
+            x = rd.uniform(0, 1)
+            if x < args.atk_freq:
+                ori_act = action.flatten()
+                data = Batch(obs=obs)
+                adv_act, adv_obs = obs_attacks(data, ori_act, adv_atk, actor_critic, device)
+                for i in range(len(adv_act)):
+                    if adv_act[i] != ori_act[i]:
+                        succ_attacks += 1
+                n_attacks += len(adv_act)
+                rollouts.obs[step] = torch.FloatTensor(adv_obs).to(device)
 
             # Sample actions
             with torch.no_grad():
@@ -183,18 +202,6 @@ def main():
             bad_masks = torch.FloatTensor(
                 [[0.0] if 'bad_transition' in info.keys() else [1.0]
                  for info in infos])
-
-            # START ADVERSARIAL ATTACK
-            x = rd.uniform(0, 1)
-            if x < args.atk_freq:
-                ori_act = action.flatten()
-                data = Batch(obs=obs)
-                adv_act, adv_obs = obs_attacks(data, ori_act, adv_atk, actor_critic, device)
-                for i in range(len(adv_act)):
-                    if adv_act[i] != ori_act[i]:
-                        succ_attacks += 1
-                n_attacks += len(adv_act)
-                obs = torch.FloatTensor(adv_obs).to(device)
 
             rollouts.insert(obs, recurrent_hidden_states, action,
                             action_log_prob, value, reward, masks, bad_masks)
