@@ -51,6 +51,7 @@ def benchmark_adversarial_policy(args=get_args()):
     policy = make_policy(args, args.policy, args.resume_path)
     # make target policy
     transferability_type = ""
+    # THIS PART MAY BE REMOVED
     if "def" in args.logdir and args.target_policy is None:
         warnings.warn("You are generating adversarial observation on the defended model, you may want to craft them on"
                       "the undefended version instead")

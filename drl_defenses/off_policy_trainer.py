@@ -70,7 +70,6 @@ def offpolicy_trainer(
     """
     env_step, gradient_step = 0, 0
     best_epoch, best_reward, best_reward_std = -1, -1.0, 0.0
-    best_defense = 1.  # lower values mean better defense rate
     stat: Dict[str, MovAvg] = {}
     start_time = time.time()
     train_collector.reset_stat()
