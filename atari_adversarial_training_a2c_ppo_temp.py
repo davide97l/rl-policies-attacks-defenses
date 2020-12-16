@@ -1,9 +1,15 @@
+import copy
+import glob
 import os
 import time
 from collections import deque
 
+import gym
 import numpy as np
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
 
 from a2c_ppo_acktr import algo, utils
 from a2c_ppo_acktr.arguments import get_args
@@ -11,6 +17,7 @@ from a2c_ppo_acktr.envs import make_vec_envs
 from a2c_ppo_acktr.model import Policy
 from a2c_ppo_acktr.storage import RolloutStorage
 
+from utils import make_atari_env_watch
 from tianshou.data import Batch, to_numpy
 from utils import make_policy, make_img_adv_attack, make_atari_env_watch, make_victim_network
 import random as rd
@@ -34,19 +41,9 @@ def main():
     envs = make_vec_envs(args.env_name, args.seed, args.num_processes,
                          args.gamma, None, device, False)
 
-    if args.resume_path is None:
-        actor_critic = Policy(
-            envs.observation_space.shape,
-            envs.action_space,
-            device=args.device,
-            base_kwargs={'recurrent': args.recurrent_policy})
-        actor_critic.to(device)
-        actor_critic.init(device)
-    else:
-        actor_critic = make_policy(args, args.algo, args.resume_path)
-
     assert args.resume_path is not None, \
         "You are training with adversarial training but you haven't declared a base trained model"
+    actor_critic = make_policy(args, args.algo, args.resume_path)
 
     if args.target_model_path:
         victim_policy = make_policy(args, args.algo, args.target_model_path)
@@ -60,7 +57,6 @@ def main():
 
     # watch agent's performance
     def watch():
-        args.num_processes = 1  # only one process simultaneously
         print("Testing agent ...")
         actor_critic.eval()
         args.task, args.frames_stack = args.env_name, 4
@@ -80,11 +76,11 @@ def main():
                 ori_act = action
                 obs = torch.FloatTensor(inputs.obs).to(device)
                 data = Batch(obs=obs)
-                adv_act, adv_obs = obs_attacks(data, ori_act, adv_atk, actor_critic)
+                adv_act, adv_obs = obs_attacks(data, ori_act, adv_atk, actor_critic, device)
                 for i in range(len(adv_act)):
                     if adv_act[i] != ori_act[i]:
                         succ_attacks += 1
-                n_attacks += args.num_processes
+                n_attacks += 1
                 action = adv_act
 
             # Observe reward and next obs
@@ -95,38 +91,12 @@ def main():
                 obs = env.reset()
                 if n_ep == args.test_num:
                     break
-        if n_attacks == 0:
-            n_attacks = 1
         print("Evaluation using {} episodes: mean reward {:.5f}, succ_atks(%) {:.3f}\n".format(
             n_ep, tot_rew / n_ep, succ_attacks / n_attacks))
 
     if args.watch:
         watch()
         exit(0)
-
-    if args.algo == 'a2c':
-        agent = algo.A2C_ACKTR(
-            actor_critic,
-            args.value_loss_coef,
-            args.entropy_coef,
-            lr=args.lr,
-            eps=args.rms_eps,
-            alpha=args.alpha,
-            max_grad_norm=args.max_grad_norm)
-    elif args.algo == 'ppo':
-        agent = algo.PPO(
-            actor_critic,
-            args.clip_param,
-            args.ppo_epoch,
-            args.num_mini_batch,
-            args.value_loss_coef,
-            args.entropy_coef,
-            lr=args.lr,
-            eps=args.rms_eps,
-            max_grad_norm=args.max_grad_norm)
-    elif args.algo == 'acktr':
-        agent = algo.A2C_ACKTR(
-            actor_critic, args.value_loss_coef, args.entropy_coef, acktr=True)
 
     rollouts = RolloutStorage(args.num_steps, args.num_processes,
                               envs.observation_space.shape, envs.action_space,
@@ -136,81 +106,72 @@ def main():
     rollouts.obs[0].copy_(obs)
     rollouts.to(device)
 
+    criterion = nn.BCEWithLogitsLoss()
+    optimizer = torch.optim.Adam(actor_critic.parameters(), lr=args.lr, betas=(0.9, 0.99), eps=1e-9)
+
     episode_rewards = deque(maxlen=10)
     acc_rewards = np.zeros(args.num_processes)
     best_reward = -np.inf
 
     start = time.time()
-    num_updates = int(
-        args.num_env_steps) // args.num_steps // args.num_processes
+    num_updates = int(args.num_steps // args.num_processes)
     print("start training")
     succ_attacks = 0
     n_attacks = 0
-    for j in range(num_updates):
 
-        if args.use_linear_lr_decay:
-            # decrease learning rate linearly
-            utils.update_linear_schedule(
-                agent.optimizer, j, num_updates,
-                agent.optimizer.lr if args.algo == "acktr" else args.lr)
-        for step in range(args.num_steps):
+    for step in range(args.num_steps):
 
-            # Get action and value of original observation
-            with torch.no_grad():
-                value, action, action_log_prob, recurrent_hidden_states = actor_critic.act(
-                    rollouts.obs[step], rollouts.recurrent_hidden_states[step],
-                    rollouts.masks[step])
-
-            # Given original action, generate adversarial observation
-            x = rd.uniform(0, 1)
-            if x < args.atk_freq:
-                ori_act = action.flatten()
-                data = Batch(obs=obs)
-                adv_act, adv_obs = obs_attacks(data, ori_act, adv_atk, actor_critic)
-                for i in range(len(adv_act)):
-                    if adv_act[i] != ori_act[i]:
-                        succ_attacks += 1
-                n_attacks += len(adv_act)
-                adv_obs = torch.FloatTensor(adv_obs).to(device)
-                rollouts.obs[step] = adv_obs
-
-            # Get action and value of adversarial observation
-            with torch.no_grad():
-                value, action, action_log_prob, recurrent_hidden_states = actor_critic.act(
-                    rollouts.obs[step], rollouts.recurrent_hidden_states[step],
-                    rollouts.masks[step])
-
-            # Observe reward and next obs given adversarial action
-            obs, reward, done, infos = envs.step(action)
-
-            for i, d in enumerate(done):
-                acc_rewards[i] += reward[i].detach().cpu()[0]
-                if d:
-                    episode_rewards.append(acc_rewards[i])
-                    acc_rewards[i] = 0
-
-            # If done then clean the history of observations.
-            masks = torch.FloatTensor(
-                [[0.0] if done_ else [1.0] for done_ in done])
-            bad_masks = torch.FloatTensor(
-                [[0.0] if 'bad_transition' in info.keys() else [1.0]
-                 for info in infos])
-
-            # Insert in memory adversarial action and value
-            rollouts.insert(obs, recurrent_hidden_states, action,
-                            action_log_prob, value, reward, masks, bad_masks)
-
+        # Sample actions
         with torch.no_grad():
-            next_value = actor_critic.get_value(
-                rollouts.obs[-1], rollouts.recurrent_hidden_states[-1],
-                rollouts.masks[-1]).detach()
+            value, action, action_log_prob, recurrent_hidden_states = actor_critic.act(
+                rollouts.obs[step], rollouts.recurrent_hidden_states[step],
+                rollouts.masks[step])
 
-        rollouts.compute_returns(next_value, args.use_gae, args.gamma,
-                                 args.gae_lambda, args.use_proper_time_limits)
+        print("sample actions:", action)
 
-        value_loss, action_loss, dist_entropy = agent.update(rollouts)
+        # START ADVERSARIAL ATTACK
+        x = rd.uniform(0, 1)
+        if x < args.atk_freq:
+            ori_act = action.flatten()
+            data = Batch(obs=obs)
+            adv_act, adv_obs = obs_attacks(data, ori_act, adv_atk, actor_critic, device)
+            for i in range(len(adv_act)):
+                if adv_act[i] != ori_act[i]:
+                    succ_attacks += 1
+            n_attacks += len(adv_act)
+            #rollouts.obs[step] = torch.FloatTensor(adv_obs).to(device)
 
-        rollouts.after_update()
+        # Sample actions
+        with torch.no_grad():
+            value, pred_action, action_log_prob, recurrent_hidden_states = actor_critic.act(
+                rollouts.obs[step], rollouts.recurrent_hidden_states[step],
+                rollouts.masks[step])
+
+        print("adversarial actions:", pred_action)
+
+        optimizer.zero_grad()
+        loss = criterion(action_log_prob, action)
+        loss.backward()
+        optimizer.step()
+
+        # Observe reward and next obs
+        obs, reward, done, infos = envs.step(action)
+
+        for i, d in enumerate(done):
+            acc_rewards[i] += reward[i].detach().cpu()[0]
+            if d:
+                episode_rewards.append(acc_rewards[i])
+                acc_rewards[i] = 0
+
+        # If done then clean the history of observations.
+        masks = torch.FloatTensor(
+            [[0.0] if done_ else [1.0] for done_ in done])
+        bad_masks = torch.FloatTensor(
+            [[0.0] if 'bad_transition' in info.keys() else [1.0]
+             for info in infos])
+
+        rollouts.insert(obs, recurrent_hidden_states, action,
+                        action_log_prob, value, reward, masks, bad_masks)
 
         # save for every interval-th episode or for the last epoch
         if len(episode_rewards) > 0 and np.mean(episode_rewards) >= best_reward and args.save_dir != "":
@@ -225,8 +186,8 @@ def main():
                 getattr(utils.get_vec_normalize(envs), 'ob_rms', None)
             ], os.path.join(save_path, "policy.pth"))
 
-        if j % args.log_interval == 0 and len(episode_rewards) > 0:
-            total_num_steps = (j + 1) * args.num_processes * args.num_steps
+        if step % args.log_interval == 0 and len(episode_rewards) > 0:
+            total_num_steps = (step + 1) * args.num_processes
             end = time.time()
             if n_attacks == 0:
                 n_attacks = 1
@@ -246,15 +207,16 @@ def main():
 def obs_attacks(data: Batch,
                 target_action: List[int],
                 obs_adv_atk,
-                policy
+                policy,
+                device,
                 ):
     """
     Performs an image adversarial attack on the observation stored in 'obs' respect to
     the action 'target_action' using the method defined in 'self.obs_adv_atk'
     """
     data = deepcopy(data)
-    obs = data.obs
-    act = target_action
+    obs = data.obs  # torch.FloatTensor(data.obs).to(device)  # convert observation to tensor
+    act = target_action  # torch.tensor(target_action).to(device)  # convert action to tensor
     adv_obs = obs_adv_atk.perturb(obs, act)  # create adversarial observation
     with torch.no_grad():
         adv_obs = adv_obs.cpu().detach().numpy()
