@@ -60,7 +60,6 @@ def main():
 
     # watch agent's performance
     def watch():
-        args.num_processes = 1  # only one process simultaneously
         print("Testing agent ...")
         actor_critic.eval()
         args.task, args.frames_stack = args.env_name, 4
