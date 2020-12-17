@@ -44,7 +44,7 @@ if __name__ == '__main__':
     rl_attack = "uniform_attack"  # strategically_timed_attack, uniform_attack, critical_strategy_attack, critical_point_attack, adversarial_policy_attack
     has_atk_freq = 1
     has_n_attacks = 0
-    smoothing = 3
+    smoothing = 4
     limit_freq = 0.99
     min_freq = 0.0
     first_equal = False  # make first reward same as first line for all lines
