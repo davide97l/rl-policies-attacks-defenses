@@ -1,7 +1,7 @@
 # Tianshou Reinforcement Learning Adversarial Attacks
-DQN policy             | Strategically-timed attack | Uniform attack |
-:-------------------------:|:-------------------------:|:------------|
- ![](pong_dqn.gif) | ![](pong_strategically_attack.gif) | ![](pong_uniform_attack.gif)
+DQN policy             | Strategically-timed attack | Uniform attack | Adversarial training |
+:-------------------------:|:-------------------------:|:------------|:---------------------|
+ ![](results/pong_dqn.gif) | ![](results/pong_strategically_attack.gif) | ![](results/pong_uniform_attack.gif) | ![](results/pong_adversarial_training.gif) |
 
 This repository implements some classic adversarial attack methods for deep reinforcement learning agents including:
 - Uniform attack [[link](https://arxiv.org/abs/1702.02284)].
@@ -10,7 +10,10 @@ This repository implements some classic adversarial attack methods for deep rein
 - Critical strategy attack.
 - Adversarial policy attack [[link](https://arxiv.org/abs/1905.10615)].
 
-Most of this project is based on the RL framework [tianshou](https://github.com/thu-ml/tianshou) based on Pytorch. Image adversarial attacks are implemented with [advertorch](https://github.com/BorealisAI/advertorch), also based on Pytorch. A2C and PPO policies are instead based on [pytorch-a2c-ppo-acktr-gail](https://github.com/ikostrikov/pytorch-a2c-ppo-acktr-gail), DQN uses the tianshou implementation. Any image adversarial attacks is compatible with this project. 
+It is also available the following defense method:
+- Adversarial training [[link](https://arxiv.org/abs/1412.6572)].
+
+Most of this project is based on the RL framework [tianshou](https://github.com/thu-ml/tianshou) based on Pytorch. Image adversarial attacks and defenses are implemented with [advertorch](https://github.com/BorealisAI/advertorch), also based on Pytorch. A2C and PPO policies are instead based on [pytorch-a2c-ppo-acktr-gail](https://github.com/ikostrikov/pytorch-a2c-ppo-acktr-gail), DQN uses the tianshou implementation. Any image adversarial attacks is compatible with this project. 
 
 ## Available models
 It also makes available trained models for different tasks which can be found in the folder `log`. The following table reports their average score for three different algorithms: DQN, A2C and PPO.
@@ -24,6 +27,13 @@ It also makes available trained models for different tasks which can be found in
 | MsPacmanNoFrameskip-v4      | 2787  | 2230  | 1929  |
 | SpaceInvadersNoFrameskip-v4 | 640   | 856   | 1120  |
 | SeaquestNoFrameskip-v4      | NA    | 1610  | 1798  |
+
+Defended models are saved in the folder `log_def`. The average reward is reported as X/Y where X is the reward under
+clear observations and Y is the reward under adversarial observations generated with uniform attack.
+
+| task                        | DQN (AdvTr) | A2C (AdvTr) | PPO (AdvTr) |
+|-----------------------------|-------|-------|-------|
+| PongNoFrameskip-v4          | 19.6/19.4 | 18.8/17.9  | 19.7/18.7  |
 
 ## Image adversarial attacks effectiveness
 The following table shows the **succeed ratio** of some common **image adversarial attacks** methods attacking observations taken from different Atari games environment. (U) and (T) mean that attacks have been performed under **untargeted** and **targeted** settings respectively. The victim agent is a PPO model.
@@ -54,10 +64,6 @@ Before start using this repository, install the required libraries in the `requi
 ```
   python atari_a2c_ppo.py --env-name "BreakoutNoFrameskip-v4" --algo a2c
 ```
-**Train** PPO agent to play Breakout.
-```
-  python atari_a2c_ppo.py --env-name "BreakoutNoFrameskip-v4"--algo ppo --use-gae --lr 2.5e-4 --clip-param 0.1 --value-loss-coef 0.5 --num-processes 8 --num-steps 128 --num-mini-batch 4 --log-interval 1 --use-linear-lr-decay --entropy-coef 0.01
-```
 **Test** DQN agent playing Pong.
 ```
   python atari_dqn.py --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --watch --test_num 10 --task "PongNoFrameskip-v4"
@@ -66,21 +72,35 @@ Before start using this repository, install the required libraries in the `requi
 ```
   python atari_a2c_ppo.py --env-name "BreakoutNoFrameskip-v4" --algo a2c --resume_path "log/BreakoutNoFrameskip-v4/a2c/policy.pth" --watch --test_num 10
 ```
-**Test** PPO agent playing Breakout.
-```
-  python atari_a2c_ppo.py --env-name "BreakoutNoFrameskip-v4" --algo ppo --resume_path "log/BreakoutNoFrameskip-v4/ppo/policy.pth" --watch --test_num 10
-```
 **Train** DQN malicious agent to play Pong minimizing the score.
 ```
   python atari_dqn.py --task "PongNoFrameskip-v4" --invert_reward --epoch 1
 ```
+**Defend** Pong DQN agent with **adversarial training**.
+```
+ python atari_adversarial_training_dqn.py --task "PongNoFrameskip-v4" --resume_path "log/PongNoFrameskip-v4/dqn/policy.pth" --logdir log_def --eps 0.01 --image_attack fgm
+```
+**Test** defended Pong DQN agent.
+```
+python atari_adversarial_training_dqn.py --task "PongNoFrameskip-v4" --resume_path "log_def/PongNoFrameskip-v4/dqn/policy.pth" --eps 0.01 --image_attack fgm --target_model_path log/PongNoFrameskip-v4/dqn/policy.pth --watch --test_num 10
+```
 To understand how to perform adversarial attacks refer to the `example.ipynb` file and to the benchmark examples contained in the folder `benchmark`.
+Moreover, you can find more command examples in the following [page](https://github.com/davide97l/tianshou-rl-attacks/tree/master/benchmark).
 
-## Test transferability over policies
-This section shows the performance of different adversarial attacks methods and their comparison between attacking an agent and 3 surrogate agents: one trained with the same policy and the others trained on a different algorithm.
+## Test attack transferability over policies
+This section shows the performance of different adversarial attacks methods and their comparison between attacking a DQN agent and 3 surrogate agents: one trained with the same policy and the others trained on a different algorithm.
 
 ![](results/dqn/dqn-pong-uniform.png)
 ![](results/dqn/dqn-pong-strategically_timed.png)
 ![](results/dqn/dqn-pong-adversarial_policy.png)
 ![](results/dqn/dqn-pong-critical_strategy.png)
 ![](results/dqn/dqn-pong-critical_point.png)
+
+## Test defense transferability over policies
+This section shows the performance of adversarial training defense method applied to DQN and its transferability over 3 surrogate agents: one trained with the same policy and the others trained on a different algorithm.
+
+![](results/dqn_adversarial_training/dqn-pong-uniform.png)
+![](results/dqn_adversarial_training/dqn-pong-strategically_timed.png)
+
+## Support
+If you found this project interesting please support me by giving it a :star:, I would really appreciate it :grinning:

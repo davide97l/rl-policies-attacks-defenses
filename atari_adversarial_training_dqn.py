@@ -129,7 +129,7 @@ def test_dqn(args=get_args()):
 
     # watch agent's performance
     def watch():
-        assert args.victim_model is not None
+        assert args.target_model_path is not None
         print("Testing agent ...")
         policy.eval()
         policy.set_eps(args.eps_test)

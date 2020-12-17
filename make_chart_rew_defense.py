@@ -34,18 +34,18 @@ if __name__ == '__main__':
 
     # Data
     task = "Pong"  # Pong
-    model = "dqn"
+    model = "ppo"
     n_lines = 4
-    transfer_model = "dqn"
-    transfer_model_2 = "dqn"
-    transfer_model_3 = "a2c"
-    transfer_model_4 = "ppo"
+    transfer_model = "ppo"
+    transfer_model_2 = "ppo"
+    transfer_model_3 = "dqn"
+    transfer_model_4 = "a2c"
     img_attack = "fgm_eps_0.05"  # fgm_eps_0.05, perfect_attack, fgm_eps_0.3
-    rl_attack = "strategically_timed_attack"  # strategically_timed_attack, uniform_attack, critical_strategy_attack, critical_point_attack, adversarial_policy_attack
+    rl_attack = "uniform_attack"  # strategically_timed_attack, uniform_attack, critical_strategy_attack, critical_point_attack, adversarial_policy_attack
     has_atk_freq = 1
     has_n_attacks = 0
     smoothing = 3
-    limit_freq = 0.012
+    limit_freq = 0.99
     min_freq = 0.0
     first_equal = False  # make first reward same as first line for all lines
     logdir = 'log_def'
