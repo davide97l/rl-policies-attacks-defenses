@@ -4,6 +4,7 @@ import argparse
 import numpy as np
 from drl_attacks.uniform_attack import uniform_attack_collector
 from utils import make_policy, make_img_adv_attack, make_atari_env_watch, make_victim_network
+import warnings
 
 
 def get_args():
@@ -50,6 +51,10 @@ def benchmark_adversarial_policy(args=get_args()):
     policy = make_policy(args, args.policy, args.resume_path)
     # make target policy
     transferability_type = ""
+    # THIS PART MAY BE REMOVED
+    if "def" in args.logdir and args.target_policy is None:
+        warnings.warn("You are generating adversarial observation on the defended model, you may want to craft them on"
+                      "the undefended version instead")
     if args.target_policy is not None:
         victim_policy = make_policy(args, args.target_policy, args.target_policy_path)
         transferability_type = "_transf_" + str(args.target_policy)

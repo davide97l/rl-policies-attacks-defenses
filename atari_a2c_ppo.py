@@ -78,14 +78,15 @@ def main():
         exit(0)
 
     if args.resume_path is not None:
-        agent = actor_critic
-    elif args.algo == 'a2c':
+        args.rms_eps = 0.1
+
+    if args.algo == 'a2c':
         agent = algo.A2C_ACKTR(
             actor_critic,
             args.value_loss_coef,
             args.entropy_coef,
             lr=args.lr,
-            eps=args.eps,
+            eps=args.rms_eps,
             alpha=args.alpha,
             max_grad_norm=args.max_grad_norm)
     elif args.algo == 'ppo':
@@ -97,7 +98,7 @@ def main():
             args.value_loss_coef,
             args.entropy_coef,
             lr=args.lr,
-            eps=args.eps,
+            eps=args.rms_eps,
             max_grad_norm=args.max_grad_norm)
     elif args.algo == 'acktr':
         agent = algo.A2C_ACKTR(

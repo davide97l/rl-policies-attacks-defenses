@@ -10,7 +10,7 @@ def get_args():
     parser.add_argument(
         '--lr', type=float, default=7e-4, help='learning rate (default: 7e-4)')
     parser.add_argument(
-        '--eps',
+        '--rms_eps',
         type=float,
         default=1e-5,
         help='RMSprop optimizer epsilon (default: 1e-5)')
@@ -146,6 +146,12 @@ def get_args():
         '--resume_path',
         default=None,
         help='path to a saved model')
+    parser.add_argument('--atk_freq', type=float, default=1.)
+    parser.add_argument('--target_model_path', type=str, default=None,
+                        help='model to base image adversarial attacks on')
+    parser.add_argument('--image_attack', type=str, default='fgm')  # fgm, cw, pgda
+    parser.add_argument('--eps', type=float, default=0.01)
+    parser.add_argument('--iterations', type=int, default=10)
     args = parser.parse_args()
 
     args.cuda = not args.no_cuda and torch.cuda.is_available()
