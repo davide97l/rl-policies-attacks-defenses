@@ -97,7 +97,7 @@ This section shows the performance of different adversarial attacks methods and 
 ![](results/dqn/dqn-pong-critical_point.png)
 
 ## Test defense transferability over policies
-This section shows the performance of adversarial training defense method applied to DQN and its transferability over 3 surrogate agents: one trained with the same policy and the others trained on a different algorithm.
+This section shows the performance of different adversarial attacks methods and their comparison between attacking a DQN agent defended with adversarial training and 3 surrogate agents: one trained with the same policy and the others trained on a different algorithm. The model has been adversarially trained with eps=0.1 but we attack it with eps=0.5 to show sigificative performance degradation.
 
 ![](results/dqn_adversarial_training/dqn-pong-uniform.png)
 ![](results/dqn_adversarial_training/dqn-pong-strategically_timed.png)
