@@ -1,4 +1,4 @@
-tianshou
+git+https://github.com/thu-ml/tianshou@cd481423dc4e63efda83f10213cfbe8680e71b76
 advertorch
 gym
 opencv-python

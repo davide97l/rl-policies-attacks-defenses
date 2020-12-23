@@ -58,6 +58,8 @@ class base_attack_collector:
 
     def get_attack_stats(self) -> Dict[str, float]:
         duration = max(time.time() - self.start_time, 1e-9)
+        if self.episode_count == 0:
+            self.episode_count = 1
         return {
             'n/ep': self.episode_count,
             'n/st': self.frames_count,

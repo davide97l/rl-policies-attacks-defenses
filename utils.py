@@ -92,7 +92,7 @@ def make_img_adv_attack(args, adv_net, min_pixel=0., max_pixel=255., targeted=Fa
     obs_adv_atk, atk_type = None, None
     if args.perfect_attack:
         atk_type = "perfect_attack"
-    elif args.image_attack == 'fgm':
+    elif args.image_attack == ['fgm', 'fgsm']:
         obs_adv_atk = GradientSignAttack(adv_net, eps=args.eps*max_pixel,
                                      clip_min=min_pixel, clip_max=max_pixel, targeted=targeted)
         atk_type = "fgm_eps_" + str(args.eps)
@@ -101,7 +101,7 @@ def make_img_adv_attack(args, adv_net, min_pixel=0., max_pixel=255., targeted=Fa
                                             max_iterations=args.iterations,
                                             clip_min=min_pixel, clip_max=max_pixel, targeted=targeted)
         atk_type = "cw_iter_" + str(args.iterations)
-    elif args.image_attack == "pgda":
+    elif args.image_attack in ["pgda", "pgd"]:
         obs_adv_atk = PGDAttack(adv_net, eps=args.eps*max_pixel, targeted=targeted,
                                 clip_min=min_pixel, clip_max=max_pixel, nb_iter=args.iterations,
                                 eps_iter=args.eps*max_pixel)
