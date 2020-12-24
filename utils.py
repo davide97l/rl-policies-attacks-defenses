@@ -88,24 +88,42 @@ def make_policy(args, policy_type, resume_path):
 
 
 def make_img_adv_attack(args, adv_net, min_pixel=0., max_pixel=255., targeted=False):
-    assert args.image_attack in ["fgm", "cw", "pgda"] or args.perfect_attack
+    # https://advertorch.readthedocs.io/en/latest/advertorch/attacks.html
     obs_adv_atk, atk_type = None, None
     if args.perfect_attack:
         atk_type = "perfect_attack"
-    elif args.image_attack == ['fgm', 'fgsm']:
+    elif args.image_attack in ['fgm', 'fgsm', 'GradientSignAttack']:
         obs_adv_atk = GradientSignAttack(adv_net, eps=args.eps*max_pixel,
                                      clip_min=min_pixel, clip_max=max_pixel, targeted=targeted)
         atk_type = "fgm_eps_" + str(args.eps)
-    elif args.image_attack == 'cw':
+    elif args.image_attack in ['cw', 'CarliniWagnerL2Attack']:
         obs_adv_atk = CarliniWagnerL2Attack(adv_net, args.action_shape, confidence=0.1,
                                             max_iterations=args.iterations,
                                             clip_min=min_pixel, clip_max=max_pixel, targeted=targeted)
         atk_type = "cw_iter_" + str(args.iterations)
-    elif args.image_attack in ["pgda", "pgd"]:
+    elif args.image_attack in ["pgda", "pgd", "PGDAttack", "LinfPGDAttack"]:
         obs_adv_atk = PGDAttack(adv_net, eps=args.eps*max_pixel, targeted=targeted,
                                 clip_min=min_pixel, clip_max=max_pixel, nb_iter=args.iterations,
-                                eps_iter=args.eps*max_pixel)
+                                eps_iter=args.eps*max_pixel / args.iterations)
         atk_type = "pgda_iter_" + str(args.iterations)
+    elif args.image_attack == "L2PGDAttack":
+        obs_adv_atk = L2PGDAttack(adv_net, eps=args.eps*max_pixel, targeted=targeted,
+                                  clip_min=min_pixel, clip_max=max_pixel, nb_iter=args.iterations,
+                                  eps_iter=args.eps*max_pixel / args.iterations)
+    elif args.image_attack == "SparseL1DescentAttack":
+        obs_adv_atk = SparseL1DescentAttack(adv_net, eps=args.eps*max_pixel, targeted=targeted,
+                                            clip_min=min_pixel, clip_max=max_pixel, nb_iter=args.iterations,
+                                            eps_iter=args.eps*max_pixel / args.iterations)
+    elif args.image_attack in ["MomentumIterativeAttack", "LinfMomentumIterativeAttack"]:
+        obs_adv_atk = MomentumIterativeAttack(adv_net, eps=args.eps*max_pixel, targeted=targeted,
+                                              clip_min=min_pixel, clip_max=max_pixel, nb_iter=args.iterations,
+                                              eps_iter=args.eps*max_pixel)
+    elif args.image_attack == "ElasticNetL1Attack":
+        obs_adv_atk = ElasticNetL1Attack(adv_net, args.action_shape, confidence=0.1,
+                                         max_iterations=args.iterations, targeted=targeted,
+                                         clip_min=min_pixel, clip_max=max_pixel)
+    else:
+        raise Exception("Attack method not defined")
     return obs_adv_atk, atk_type
 
 
