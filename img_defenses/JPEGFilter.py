@@ -1,5 +1,6 @@
 from torchvision import transforms
 from PIL import Image
+import numpy as np
 
 _to_pil_image = transforms.ToPILImage()
 _to_tensor = transforms.ToTensor()
@@ -18,6 +19,10 @@ def JPEGFilterDefense(policy, quality=10):
     Usage example:
         policy = load_policy(...)
         def_policy = JPEGFilterDefense(policy)
+
+    :param policy: (policy) Tianshou Policy object
+    :param quality: (int) jpeg image quality
+    :return: defended policy
     """
 
     f = policy.forward
@@ -29,12 +34,16 @@ def JPEGFilterDefense(policy, quality=10):
         """
 
         x = s.obs
-        for batch in range(len(x)):
-            for frame in range(batch):
-                img = _to_pil_image(x[batch][frame])
+        for batch in range(x.shape[0]):
+            for frame in range(x.shape[1]):
+                img = _to_pil_image(np.expand_dims(x[batch][frame].astype(np.uint8), axis=-1))
                 virtualpath = BytesIO()
                 img.save(virtualpath, 'JPEG', quality=quality)
-                x[batch][frame] = Image.open(virtualpath)
+                arr = np.array(Image.open(virtualpath))
+                img = Image.fromarray(np.uint8(arr))
+                virtualpath = BytesIO()
+                img.save(virtualpath, 'BMP')
+                x[batch][frame] = np.array(Image.open(virtualpath))
         s.obs = x
         return f(s, last_state)
 
