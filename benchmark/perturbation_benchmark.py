@@ -6,9 +6,10 @@ from drl_attacks.uniform_attack import uniform_attack_collector
 from utils import make_policy, make_img_adv_attack, make_atari_env_watch, make_victim_network
 from advertorch.attacks import *
 import matplotlib.pyplot as plt
+from img_defenses import *
 
 
-# python benchmark/perturbation_benchmark.py --task PongNoFrameskip-v4 --logdir log_benchmark --test-num 10
+# python benchmark/perturbation_benchmark.py --task PongNoFrameskip-v4 --logdir log_benchmark --test-num 5
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', type=str, default='PongNoFrameskip-v4')
@@ -26,7 +27,7 @@ def get_args():
     parser.add_argument('--frames_stack', type=int, default=4)
     parser.add_argument('--policy', type=str, default='dqn')  # dqn, a2c, ppo
     parser.add_argument('--iterations', type=int, default=10)
-    parser.add_argument('--logdir', type=str, default='log_benchmark')
+    parser.add_argument('--logdir', type=str, default='log_perturbation_benchmark')
     parser.add_argument('--attack_freq', type=float, default=0.5)
     args = parser.parse_known_args()[0]
     return args
@@ -38,32 +39,40 @@ if __name__ == '__main__':
     args.perfect_attack = False
     args.target_policy = args.policy
     env = make_atari_env_watch(args)
-    img_attacks = [#"GradientAttack",  # too weak
+    img_attacks = ["No Attack",
                    "GradientSignAttack",  # ok
                    "LinfPGDAttack",  # ok
                    "MomentumIterativeAttack",  # ok
-                    ]
-    attack_labels = {"GradientAttack": "FGM",
-                     "GradientSignAttack": "FGSM",
-                     "LinfPGDAttack": "PGD-L1",
+                  ]
+    attack_labels = {"No Attack": "No Attack",
+                     "GradientAttack": "FGM",
+                     "GradientSignAttack": "FGSM-Linf",
+                     "LinfPGDAttack": "PGD-Linf",
                      "L2PGDAttack": "PGD-L2",
                      "CarliniWagnerL2Attack": "CW",
                      "SparseL1DescentAttack": "SD",
-                     "MomentumIterativeAttack": "MI",
+                     "MomentumIterativeAttack": "MI-Linf",
                      "ElasticNetL1Attack": "EN",
                      }
-    rl_defenses = ["",
-                   "FGSMAdversarialTraining",
-                   "PGDAdversarialTraining"]
-    defense_labels = {"": "No Defense",
+    rl_defenses = [#"No Defense",
+                   #"FGSMAdversarialTraining",
+                   #"PGDAdversarialTraining",
+                   #"JPEGFilter",
+                   #"BitSqueezing",
+                   "Smoothing",
+                   ]
+    defense_labels = {"No Defense": "No Defense",
                       "FGSMAdversarialTraining": "FGSM AdvTr",
-                      "PGDAdversarialTraining": "PGD AdvTr"}
-    atk_eps = np.linspace(0., 0.05, 20, endpoint=True)
+                      "PGDAdversarialTraining": "PGD AdvTr",
+                      "JPEGFilter": "JPEG Filter",
+                      "BitSqueezing": "Bit Squeezing",
+                      "Smoothing": "Smoothing"}
+    atk_eps = np.linspace(0., 0.05, 10, endpoint=True)
     save_path = os.path.join(args.logdir, args.task, args.policy)
     if not os.path.exists(save_path):
         os.makedirs(save_path)
 
-    f = open(os.path.join(args.logdir, args.task, "benchmark_result.txt"), "w+")
+    f = open(os.path.join(args.logdir, args.task, args.policy, "perturbation_benchmark_result.txt"), "w+")
 
     args.state_shape = env.observation_space.shape or env.observation_space.n
     args.action_shape = env.env.action_space.shape or env.env.action_space.n
@@ -81,11 +90,19 @@ if __name__ == '__main__':
         # chart
         fig, ax = plt.subplots()
 
-        if defense == "":
+        if defense == "No Defense":
             def_policy = policy
-        else:
+        elif "AdversarialTraining" in defense:
             def_policy = make_policy(args, args.policy,
                                      os.path.join("log_def", args.task, args.policy, defense + ".pth"))
+        elif "JPEGFilter" == defense:
+            def_policy = JPEGFilterDefense(policy, quality=20)
+        elif "BitSqueezing" == defense:
+            def_policy = BitSqueezingDefense(policy, bit_depth=6)
+        elif "Smoothing" == defense:
+            def_policy = SmoothingDefense(policy, kernel_size=2, smoothing="median")
+        else:
+            raise Exception("Defense not defined")
         # use "def_policy" to make predictions and "adv_net" to craft adversarial attacks
 
         # define adversarial collector
@@ -98,15 +115,28 @@ if __name__ == '__main__':
 
             rewards = []
 
+            collector.atk_frequency = args.attack_freq
+
             for eps in atk_eps:
                 # define observations adversarial attack
                 args.eps, args.image_attack = eps, img_atk
-                collector.obs_adv_atk, _ = make_img_adv_attack(args, adv_net, targeted=False)
-                test_adversarial_policy = collector.collect(n_episode=args.test_num)
-                rewards.append(test_adversarial_policy['rew'])
+                episodes = args.test_num
+                if img_atk == "No Attack":
+                    # we can assign a random attack since the frequency is 0
+                    args.image_attack = "GradientSignAttack"
+                    collector.atk_frequency = 0
+                    episodes *= 2
+
+                if collector.atk_frequency > 0 or len(rewards) == 0:
+                    collector.obs_adv_atk, _ = make_img_adv_attack(args, adv_net, targeted=False)
+                    test_adversarial_policy = collector.collect(n_episode=episodes)
+                    rewards.append(test_adversarial_policy['rew'])
+                else:
+                    rewards.append(rewards[-1])
+
             str_rewards = [str(x) for x in rewards]
-            print(attack_labels[img_atk] + "-" + defense_labels[defense] + "-" + " ".join(str_rewards))
-            f.write(attack_labels[img_atk] + "-" + defense_labels[defense] + "-" + " ".join(str_rewards) + "\n")
+            print(attack_labels[img_atk] + "|" + defense_labels[defense] + "|" + " ".join(str_rewards))
+            f.write(attack_labels[img_atk] + "|" + defense_labels[defense] + "|" + " ".join(str_rewards) + "\n")
 
             plt.plot(atk_eps, rewards, label=attack_labels[img_atk])
         plt.xlabel('Perturbation Budget')
