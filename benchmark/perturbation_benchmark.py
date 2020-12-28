@@ -5,7 +5,6 @@ import numpy as np
 from drl_attacks.uniform_attack import uniform_attack_collector
 from utils import make_policy, make_img_adv_attack, make_atari_env_watch, make_victim_network
 from advertorch.attacks import *
-import matplotlib.pyplot as plt
 from img_defenses import *
 
 
@@ -29,6 +28,7 @@ def get_args():
     parser.add_argument('--iterations', type=int, default=10)
     parser.add_argument('--logdir', type=str, default='log_perturbation_benchmark')
     parser.add_argument('--attack_freq', type=float, default=0.5)
+    parser.add_argument('--sample_points', type=int, default=10)
     args = parser.parse_known_args()[0]
     return args
 
@@ -67,12 +67,15 @@ if __name__ == '__main__':
                       "JPEGFilter": "JPEG Filter",
                       "BitSqueezing": "Bit Squeezing",
                       "Smoothing": "Smoothing"}
-    atk_eps = np.linspace(0., 0.05, 10, endpoint=True)
+    atk_eps = np.linspace(0., 0.05, args.sample_points, endpoint=True)
     save_path = os.path.join(args.logdir, args.task, args.policy)
     if not os.path.exists(save_path):
         os.makedirs(save_path)
 
-    f = open(os.path.join(args.logdir, args.task, args.policy, "perturbation_benchmark_result.txt"), "w+")
+    file_name = "perturbation_benchmark_result.txt"
+    if len(rl_defenses) == 1:
+        file_name = "perturbation_benchmark_" + str(rl_defenses[0]) + ".txt"
+    f = open(os.path.join(args.logdir, args.task, args.policy, file_name), "w+")
 
     args.state_shape = env.observation_space.shape or env.observation_space.n
     args.action_shape = env.env.action_space.shape or env.env.action_space.n
@@ -86,9 +89,6 @@ if __name__ == '__main__':
     adv_net = make_victim_network(args, policy)
     # make defended policies
     for defense in rl_defenses:
-
-        # chart
-        fig, ax = plt.subplots()
 
         if defense == "No Defense":
             def_policy = policy
@@ -137,11 +137,4 @@ if __name__ == '__main__':
             str_rewards = [str(x) for x in rewards]
             print(attack_labels[img_atk] + "|" + defense_labels[defense] + "|" + " ".join(str_rewards))
             f.write(attack_labels[img_atk] + "|" + defense_labels[defense] + "|" + " ".join(str_rewards) + "\n")
-
-            plt.plot(atk_eps, rewards, label=attack_labels[img_atk])
-        plt.xlabel('Perturbation Budget')
-        plt.ylabel('Reward')
-        plt.title(defense_labels[defense])
-        plt.legend(loc='upper right')
-        plt.savefig(os.path.join(save_path, defense_labels[defense] + ".jpg"))
     f.close()

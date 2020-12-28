@@ -50,7 +50,6 @@ if __name__ == '__main__':
     first_equal = False  # make first reward same as first line for all lines
     logdir = 'log_def'
     input_file = [
-        #logdir + "/" + task + "NoFrameskip-v4/" + model + "/" + rl_attack + "_" + img_attack + ".npy",
         logdir + "/" + task + "NoFrameskip-v4/" + model + "/" + rl_attack + "_" + img_attack + "_transf_" + transfer_model + ".npy",
         logdir + "/" + task + "NoFrameskip-v4/" + model + "/" + rl_attack + "_" + img_attack + "_transf_" + transfer_model_2 + "_2.npy",
         logdir + "/" + task + "NoFrameskip-v4/" + model + "/" + rl_attack + "_" + img_attack + "_transf_" + transfer_model_3 + ".npy",
