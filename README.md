@@ -3,17 +3,17 @@ DQN policy             | Strategically-timed attack | Uniform attack | Adversari
 :-------------------------:|:-------------------------:|:------------|:---------------------|
 ![](results/pong_dqn.gif) | ![](results/pong_strategically_attack.gif) | ![](results/pong_uniform_attack.gif) | ![](results/pong_adversarial_training.gif) |
 
-This repository implements some classic adversarial attack methods for deep reinforcement learning agents including:
+This repository implements some classic adversarial attack methods for deep reinforcement learning agents including (`drl_attacks/`):
 - Uniform attack [[link](https://arxiv.org/abs/1702.02284)].
 - Strategical timed attack [[link](https://www.ijcai.org/Proceedings/2017/0525.pdf)].
 - Critical point attack [[link](https://arxiv.org/abs/2005.07099)].
 - Critical strategy attack.
 - Adversarial policy attack [[link](https://arxiv.org/abs/1905.10615)].
 
-It is also available the following RL-defense method:
+It is also available the following RL-defense method (`drl_defenses/`):
 - Adversarial training [[link](https://arxiv.org/abs/1412.6572)].
 
-Are provided also some image-defense methods:
+Are provided also some image-defense methods (`img_defenses/`):
 - JPEG conversion [[link](https://arxiv.org/pdf/1607.02533.pdf)].
 - Bit squeezing [[link](https://arxiv.org/abs/1704.01155)].
 - Image smoothing [[link](https://arxiv.org/abs/1704.01155)].
