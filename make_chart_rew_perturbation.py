@@ -28,6 +28,7 @@ if __name__ == '__main__':
         attacks.append(attack)
         defenses.append(defense)
         rewards.append(reward)
+    print(defenses)
 
     fig, ax = plt.subplots()
     for i, defense in enumerate(defenses):

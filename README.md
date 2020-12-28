@@ -110,6 +110,10 @@ Uniform             | Strategically-timed |
 
 ## Perturbation benchmark on defended policies
 Test the performance of different image attacks methods attacking observations of DQN agent defended with different defense methods and attacking over different values of epsilon.
+Image attacks:
+- FGSM [[link](https://arxiv.org/abs/1412.6572)]
+- PGD: Projected Gradient Descent [[link](https://arxiv.org/abs/1706.06083)]
+- MI: Momentum Iterative [[link](https://arxiv.org/abs/1710.06081)]
 
 FGSM adv training             | PGD adv training  |
 :-------------------------:|:-------------------------:|

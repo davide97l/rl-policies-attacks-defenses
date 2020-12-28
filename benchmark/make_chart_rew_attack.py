@@ -12,7 +12,7 @@ def sort_pivot(list1, list2):
 
 
 def smooth(list1, list2, smoothing=4):
-    """Smooth list2"""
+    """Smooth list2 according to list1"""
     poly = np.polyfit(list1, list2, smoothing)
     list_2 = np.poly1d(poly)(list1)
     return list_2
@@ -80,26 +80,30 @@ if __name__ == '__main__':
     min_x, min_index = np.inf, 0
     for i in range(n_lines):
         x[i], rewards[i] = sort_pivot(x[i], rewards[i])
+
         #print("Attack frequencies:", atk_freq[i])
         #print("Rewards:", rewards[i])
         #print("Number attacks:", n_attacks[i])
+
         rewards[i] = smooth(x[i], rewards[i], smoothing=smoothing)
 
+        # remove attack frequencies more than 'limit_freq'
         if limit_freq:
             a = [(j, rewards[i][h]) for h, j in enumerate(x[i]) if j <= limit_freq]
             rewards[i] = [e[1] for e in a]
             x[i] = [e[0] for e in a]
+        # remove attack frequencies less than 'min_freq'
         if min_freq:
             a = [(j, rewards[i][h]) for h, j in enumerate(x[i]) if j >= min_freq]
             rewards[i] = [e[1] for e in a]
             x[i] = [e[0] for e in a]
-
 
         x1_lists.append(x[i])
         y1_lists.append(rewards[i])
         if i == n_lines-1 and x[i][-1] < min_x:
             min_x = x[i][-1]
             min_index = i
+        # make first reward equal for each line
         if first_equal:
             rewards[i][0] = max(max(rewards[0]), max(rewards[1]), max(rewards[2]), max(rewards[3]))
 
@@ -118,7 +122,6 @@ if __name__ == '__main__':
 
     plt.legend(loc='upper right')
 
-    # Add titles
     rl_attack = rl_attack.replace("_", " ")
     plt.title(task + " - " + model + " - " + rl_attack, loc='center')
     if has_atk_freq:
