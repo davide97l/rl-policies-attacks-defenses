@@ -92,11 +92,11 @@ def make_img_adv_attack(args, adv_net, min_pixel=0., max_pixel=255., targeted=Fa
     obs_adv_atk, atk_type = None, None
     if args.perfect_attack:
         atk_type = "perfect_attack"
-    elif args.image_attack == ['fgm', 'fgsm']:
+    elif args.image_attack in ['fgm', 'fgsm']:
         obs_adv_atk = GradientSignAttack(adv_net, eps=args.eps*max_pixel,
                                      clip_min=min_pixel, clip_max=max_pixel, targeted=targeted)
         atk_type = "fgm_eps_" + str(args.eps)
-    elif args.image_attack == 'cw':
+    elif args.image_attack in ['cw']:
         obs_adv_atk = CarliniWagnerL2Attack(adv_net, args.action_shape, confidence=0.1,
                                             max_iterations=args.iterations,
                                             clip_min=min_pixel, clip_max=max_pixel, targeted=targeted)
