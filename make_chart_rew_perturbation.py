@@ -41,7 +41,7 @@ if __name__ == '__main__':
             plt.ylabel('Reward')
             plt.title(defense)
             plt.legend(loc='upper right')
-            plot_path = os.path.join(save_path, defense + ".jpg")
+            plot_path = os.path.join(save_path, defense.replace(" ", "_") + ".jpg")
             plt.savefig(plot_path)
             print("plotted:", plot_path)
             #plt.show()

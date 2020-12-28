@@ -99,7 +99,7 @@ Uniform             | Strategically-timed |
 :-------------------------:|:-------------------------:|
 ![](results/dqn/dqn-pong-uniform.png) | ![](results/dqn/dqn-pong-strategically_timed.png) |
 **Critical point**             | **Adversarial policy** |
-![](results/results/dqn/dqn-pong-critical_point.png) | ![](results/dqn/dqn-pong-adversarial_policy.png) |
+![](results/dqn/dqn-pong-critical_point.png) | ![](results/dqn/dqn-pong-adversarial_policy.png) |
 
 ## Test attack transferability over defended policies
 This section shows the performance of different adversarial attacks methods and their comparison between attacking a DQN agent defended with **adversarial training** and 3 surrogate agents: one trained with the same policy and the others trained on a different algorithm. The model has been adversarially trained with eps=0.1 but we attack it with eps=0.5 to show significant performance degradation.
@@ -113,9 +113,9 @@ Test the performance of different image attacks methods attacking observations o
 
 FGSM adv training             | PGD adv training  |
 :-------------------------:|:-------------------------:|
-![](results/pong_dqn_perturbation_benchmark/FGSM AdvTr.jpg) | ![](results/pong_dqn_perturbation_benchmark/PGD AdvTr.jpg) |
+![](results/pong_dqn_perturbation_benchmark/FGSM_AdvTr.jpg) | ![](results/pong_dqn_perturbation_benchmark/PGD_AdvTr.jpg) |
 **JPEG conversion**             | **Bit squeezing** |
-![](results/pong_dqn_perturbation_benchmark/JPEG Filter.jpg) | ![](results/pong_dqn_perturbation_benchmark/Bit Squeezing.jpg) |
+![](results/pong_dqn_perturbation_benchmark/JPEG_Filter.jpg) | ![](results/pong_dqn_perturbation_benchmark/Bit_Squeezing.jpg) |
 
 ## Support
 If you found this project interesting please support me by giving it a :star:, I would really appreciate it :grinning:
