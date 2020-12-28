@@ -1,17 +1,22 @@
 # Tianshou Reinforcement Learning Adversarial Attacks
 DQN policy             | Strategically-timed attack | Uniform attack | Adversarial training |
 :-------------------------:|:-------------------------:|:------------|:---------------------|
- ![](results/pong_dqn.gif) | ![](results/pong_strategically_attack.gif) | ![](results/pong_uniform_attack.gif) | ![](results/pong_adversarial_training.gif) |
+![](results/pong_dqn.gif) | ![](results/pong_strategically_attack.gif) | ![](results/pong_uniform_attack.gif) | ![](results/pong_adversarial_training.gif) |
 
-This repository implements some classic adversarial attack methods for deep reinforcement learning agents including:
+This repository implements some classic adversarial attack methods for deep reinforcement learning agents including (`drl_attacks/`):
 - Uniform attack [[link](https://arxiv.org/abs/1702.02284)].
 - Strategical timed attack [[link](https://www.ijcai.org/Proceedings/2017/0525.pdf)].
 - Critical point attack [[link](https://arxiv.org/abs/2005.07099)].
 - Critical strategy attack.
 - Adversarial policy attack [[link](https://arxiv.org/abs/1905.10615)].
 
-It is also available the following defense method:
+It is also available the following RL-defense method (`drl_defenses/`):
 - Adversarial training [[link](https://arxiv.org/abs/1412.6572)].
+
+Are provided also some image-defense methods (`img_defenses/`):
+- JPEG conversion [[link](https://arxiv.org/pdf/1607.02533.pdf)].
+- Bit squeezing [[link](https://arxiv.org/abs/1704.01155)].
+- Image smoothing [[link](https://arxiv.org/abs/1704.01155)].
 
 Most of this project is based on the RL framework [tianshou](https://github.com/thu-ml/tianshou) based on Pytorch. Image adversarial attacks and defenses are implemented with [advertorch](https://github.com/BorealisAI/advertorch), also based on Pytorch. A2C and PPO policies are instead based on [pytorch-a2c-ppo-acktr-gail](https://github.com/ikostrikov/pytorch-a2c-ppo-acktr-gail), DQN uses the tianshou implementation. Any image adversarial attacks is compatible with this project. 
 
@@ -90,17 +95,31 @@ Moreover, you can find more command examples in the following [page](https://git
 ## Test attack transferability over policies
 This section shows the performance of different adversarial attacks methods and their comparison between attacking a DQN agent and 3 surrogate agents: one trained with the same policy and the others trained on a different algorithm.
 
-![](results/dqn/dqn-pong-uniform.png)
-![](results/dqn/dqn-pong-strategically_timed.png)
-![](results/dqn/dqn-pong-adversarial_policy.png)
-![](results/dqn/dqn-pong-critical_strategy.png)
-![](results/dqn/dqn-pong-critical_point.png)
+Uniform             | Strategically-timed |
+:-------------------------:|:-------------------------:|
+![](results/dqn/dqn-pong-uniform.png) | ![](results/dqn/dqn-pong-strategically_timed.png) |
+**Critical point**             | **Adversarial policy** |
+![](results/dqn/dqn-pong-critical_point.png) | ![](results/dqn/dqn-pong-adversarial_policy.png) |
 
-## Test defense transferability over policies
-This section shows the performance of different adversarial attacks methods and their comparison between attacking a DQN agent defended with adversarial training and 3 surrogate agents: one trained with the same policy and the others trained on a different algorithm. The model has been adversarially trained with eps=0.1 but we attack it with eps=0.5 to show sigificative performance degradation.
+## Test attack transferability over defended policies
+This section shows the performance of different adversarial attacks methods and their comparison between attacking a DQN agent defended with **adversarial training** and 3 surrogate agents: one trained with the same policy and the others trained on a different algorithm. The model has been adversarially trained with eps=0.1 but we attack it with eps=0.5 to show significant performance degradation.
 
-![](results/dqn_adversarial_training/dqn-pong-uniform.png)
-![](results/dqn_adversarial_training/dqn-pong-strategically_timed.png)
+Uniform             | Strategically-timed |
+:-------------------------:|:-------------------------:|
+![](results/dqn_adversarial_training/dqn-pong-uniform.png) | ![](results/dqn_adversarial_training/dqn-pong-strategically_timed.png) |
+
+## Perturbation benchmark on defended policies
+Test the performance of different image attacks methods attacking observations of DQN agent defended with different defense methods and attacking over different values of epsilon.
+Image attacks:
+- FGSM [[link](https://arxiv.org/abs/1412.6572)]
+- PGD: Projected Gradient Descent [[link](https://arxiv.org/abs/1706.06083)]
+- MI: Momentum Iterative [[link](https://arxiv.org/abs/1710.06081)]
+
+FGSM adv training             | PGD adv training  |
+:-------------------------:|:-------------------------:|
+![](results/pong_dqn_perturbation_benchmark/FGSM_AdvTr.jpg) | ![](results/pong_dqn_perturbation_benchmark/PGD_AdvTr.jpg) |
+**JPEG conversion**             | **Bit squeezing** |
+![](results/pong_dqn_perturbation_benchmark/JPEG_Filter.jpg) | ![](results/pong_dqn_perturbation_benchmark/Bit_Squeezing.jpg) |
 
 ## Support
 If you found this project interesting please support me by giving it a :star:, I would really appreciate it :grinning:
