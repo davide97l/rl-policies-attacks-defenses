@@ -83,9 +83,6 @@ if __name__ == '__main__':
     min_x, min_index = np.inf, 0
     for i in range(n_lines):
         x[i], rewards[i] = sort_pivot(x[i], rewards[i])
-        #print("Attack frequencies:", atk_freq[i])
-        #print("Rewards:", rewards[i])
-        #print("Number attacks:", n_attacks[i])
         rewards[i] = smooth(x[i], rewards[i], smoothing=smoothing)
 
         if limit_freq:
@@ -96,7 +93,6 @@ if __name__ == '__main__':
             a = [(j, rewards[i][h]) for h, j in enumerate(x[i]) if j >= min_freq]
             rewards[i] = [e[1] for e in a]
             x[i] = [e[0] for e in a]
-
 
         x1_lists.append(x[i])
         y1_lists.append(rewards[i])
