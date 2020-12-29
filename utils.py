@@ -4,8 +4,8 @@ from net.discrete_net import DQN, ConvNet, Actor, Critic
 from tianshou.policy import DQNPolicy, A2CPolicy
 from advertorch.attacks import *
 from atari_wrapper import wrap_deepmind
-import os
 import copy
+from img_attacks import DeepfoolLinfAttack
 
 
 class TianshouNetAdapter(nn.Module):
@@ -104,24 +104,30 @@ def make_img_adv_attack(args, adv_net, min_pixel=0., max_pixel=255., targeted=Fa
     elif args.image_attack in ["pgda", "pgd", "PGDAttack", "LinfPGDAttack"]:
         obs_adv_atk = PGDAttack(adv_net, eps=args.eps*max_pixel, targeted=targeted,
                                 clip_min=min_pixel, clip_max=max_pixel, nb_iter=args.iterations,
-                                eps_iter=args.eps*max_pixel / args.iterations)
+                                eps_iter=args.eps*max_pixel * 2 / args.iterations)
         atk_type = "pgda_iter_" + str(args.iterations)
     elif args.image_attack == "L2PGDAttack":
         obs_adv_atk = L2PGDAttack(adv_net, eps=args.eps*max_pixel, targeted=targeted,
                                   clip_min=min_pixel, clip_max=max_pixel, nb_iter=args.iterations,
-                                  eps_iter=args.eps*max_pixel / args.iterations)
+                                  eps_iter=args.eps*max_pixel * 2 / args.iterations)
     elif args.image_attack == "SparseL1DescentAttack":
+        # https://arxiv.org/abs/1909.05040
         obs_adv_atk = SparseL1DescentAttack(adv_net, eps=args.eps*max_pixel, targeted=targeted,
                                             clip_min=min_pixel, clip_max=max_pixel, nb_iter=args.iterations,
-                                            eps_iter=args.eps*max_pixel / args.iterations)
+                                            eps_iter=args.eps*max_pixel * 2 / args.iterations)
     elif args.image_attack in ["MomentumIterativeAttack", "LinfMomentumIterativeAttack"]:
         obs_adv_atk = MomentumIterativeAttack(adv_net, eps=args.eps*max_pixel, targeted=targeted,
                                               clip_min=min_pixel, clip_max=max_pixel, nb_iter=args.iterations,
-                                              eps_iter=args.eps*max_pixel)
+                                              eps_iter=args.eps*max_pixel * 2 / args.iterations)
     elif args.image_attack == "ElasticNetL1Attack":
         obs_adv_atk = ElasticNetL1Attack(adv_net, args.action_shape, confidence=0.1,
                                          max_iterations=args.iterations, targeted=targeted,
                                          clip_min=min_pixel, clip_max=max_pixel)
+    elif args.image_attack in ["DeepfoolLinfAttack"]:
+        assert targeted is False, "Deepfool only supports untargeted attacks"
+        obs_adv_atk = DeepfoolLinfAttack(adv_net, eps=args.eps*max_pixel,
+                                         clip_min=min_pixel, clip_max=max_pixel, nb_iter=args.iterations,
+                                         )
     else:
         raise Exception("Attack method not defined")
     return obs_adv_atk, atk_type

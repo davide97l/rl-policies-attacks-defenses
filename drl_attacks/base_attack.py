@@ -155,7 +155,7 @@ class base_attack_collector:
             * ``n_attacks`` number of performed attacks.
             * ``n_succ_attacks`` number of performed successful attacks.
             * ``n_attacks(%)`` ratio of performed attacks over steps.
-            * ``succ_attacks(%)`` ratio of successful attacks over performed attacks.
+            * ``succ_atks(%)`` ratio of successful attacks over performed attacks.
         """
 
         error = "Sub-classes must implement 'collect'."
