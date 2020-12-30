@@ -89,6 +89,11 @@ def make_policy(args, policy_type, resume_path):
 
 def make_img_adv_attack(args, adv_net, min_pixel=0., max_pixel=255., targeted=False):
     # https://advertorch.readthedocs.io/en/latest/advertorch/attacks.html
+    """
+    eps, clip_min, clip_max, targeted, nb_iter, eps_iter are shared among most of the attacks
+    so they can be defined in 'args' or direclty passed to this function.
+    Other params specific for each method can be manually defined here.
+    """
     obs_adv_atk, atk_type = None, None
     if args.perfect_attack:
         atk_type = "perfect_attack"

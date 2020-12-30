@@ -2,13 +2,14 @@ import os
 import torch
 import argparse
 import numpy as np
-from drl_attacks.uniform_attack import uniform_attack_collector
+from drl_attacks import *
 from utils import make_policy, make_img_adv_attack, make_atari_env_watch, make_victim_network
 from advertorch.attacks import *
 from img_defenses import *
 
 
 # python benchmark/perturbation_benchmark.py --task PongNoFrameskip-v4 --logdir log_benchmark --test-num 5
+# python benchmark/perturbation_benchmark.py --targeted --device "cuda:1"
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', type=str, default='PongNoFrameskip-v4')
@@ -29,6 +30,7 @@ def get_args():
     parser.add_argument('--logdir', type=str, default='log_perturbation_benchmark')
     parser.add_argument('--attack_freq', type=float, default=0.5)
     parser.add_argument('--sample_points', type=int, default=10)
+    parser.add_argument('--targeted', default=False, action='store_true')
     args = parser.parse_known_args()[0]
     return args
 
@@ -39,11 +41,15 @@ if __name__ == '__main__':
     args.perfect_attack = False
     args.target_policy = args.policy
     env = make_atari_env_watch(args)
+    # comment the attacks you don't need
     img_attacks = ["No Attack",
                    "GradientSignAttack",  # ok
                    "LinfPGDAttack",  # ok
                    "MomentumIterativeAttack",  # ok
+                   "DeepfoolLinfAttack"
                   ]
+    # you can change attack parameters in the utils.py file
+
     attack_labels = {"No Attack": "No Attack",
                      "GradientAttack": "FGM",
                      "GradientSignAttack": "FGSM-Linf",
@@ -53,12 +59,14 @@ if __name__ == '__main__':
                      "SparseL1DescentAttack": "SD",
                      "MomentumIterativeAttack": "MI-Linf",
                      "ElasticNetL1Attack": "EN",
+                     "DeepfoolLinfAttack": "Deepfool-Linf"
                      }
-    rl_defenses = [#"No Defense",
-                   #"FGSMAdversarialTraining",
-                   #"PGDAdversarialTraining",
-                   #"JPEGFilter",
-                   #"BitSqueezing",
+    # comment the defences you don't need
+    rl_defenses = ["No Defense",
+                   "FGSMAdversarialTraining",
+                   "PGDAdversarialTraining",
+                   "JPEGFilter",
+                   "BitSqueezing",
                    "Smoothing",
                    ]
     defense_labels = {"No Defense": "No Defense",
@@ -68,14 +76,17 @@ if __name__ == '__main__':
                       "BitSqueezing": "Bit Squeezing",
                       "Smoothing": "Smoothing"}
     atk_eps = np.linspace(0., 0.05, args.sample_points, endpoint=True)
-    save_path = os.path.join(args.logdir, args.task, args.policy)
+    if args.targeted is False:
+        save_path = os.path.join(args.logdir, args.task, args.policy, "untargeted")
+    else:
+        save_path = os.path.join(args.logdir, args.task, args.policy, "targeted")
     if not os.path.exists(save_path):
         os.makedirs(save_path)
 
     file_name = "perturbation_benchmark_result.txt"
     if len(rl_defenses) == 1:
         file_name = "perturbation_benchmark_" + str(rl_defenses[0]) + ".txt"
-    f = open(os.path.join(args.logdir, args.task, args.policy, file_name), "w+")
+        f_rew = open(os.path.join(save_path, file_name), "w+")
 
     args.state_shape = env.observation_space.shape or env.observation_space.n
     args.action_shape = env.env.action_space.shape or env.env.action_space.n
@@ -98,7 +109,7 @@ if __name__ == '__main__':
         elif "JPEGFilter" == defense:
             def_policy = JPEGFilterDefense(policy, quality=20)
         elif "BitSqueezing" == defense:
-            def_policy = BitSqueezingDefense(policy, bit_depth=6)
+            def_policy = BitSqueezingDefense(policy, bit_depth=5)
         elif "Smoothing" == defense:
             def_policy = SmoothingDefense(policy, kernel_size=2, smoothing="median")
         else:
@@ -106,14 +117,23 @@ if __name__ == '__main__':
         # use "def_policy" to make predictions and "adv_net" to craft adversarial attacks
 
         # define adversarial collector
-        collector = uniform_attack_collector(def_policy, env,
-                                             obs_adv_atk=None,
-                                             perfect_attack=False,
-                                             atk_frequency=args.attack_freq,
-                                             device=args.device)
+        if args.targeted is False:
+            collector = uniform_attack_collector(def_policy, env,
+                                                 obs_adv_atk=None,
+                                                 perfect_attack=False,
+                                                 atk_frequency=args.attack_freq,
+                                                 device=args.device)
+        else:
+            collector = strategically_timed_attack_collector(def_policy, env,
+                                                             obs_adv_atk=None,
+                                                             perfect_attack=False,
+                                                             softmax=False,
+                                                             beta=0,  # in this way it always attacks, ignore args.frequency
+                                                             device=args.device)
         for img_atk in img_attacks:
 
             rewards = []
+            accuracies = []
 
             collector.atk_frequency = args.attack_freq
 
@@ -128,13 +148,18 @@ if __name__ == '__main__':
                     episodes *= 2
 
                 if collector.atk_frequency > 0 or len(rewards) == 0:
-                    collector.obs_adv_atk, _ = make_img_adv_attack(args, adv_net, targeted=False)
+                    collector.obs_adv_atk, _ = make_img_adv_attack(args, adv_net, targeted=args.targeted)
                     test_adversarial_policy = collector.collect(n_episode=episodes)
                     rewards.append(test_adversarial_policy['rew'])
+                    accuracies.append(test_adversarial_policy['succ_atks(%)'])
                 else:
                     rewards.append(rewards[-1])
+                    accuracies.append(accuracies[-1])
 
             str_rewards = [str(x) for x in rewards]
-            print(attack_labels[img_atk] + "|" + defense_labels[defense] + "|" + " ".join(str_rewards))
-            f.write(attack_labels[img_atk] + "|" + defense_labels[defense] + "|" + " ".join(str_rewards) + "\n")
-    f.close()
+            str_accuracies = [str(x) for x in accuracies]
+            print(attack_labels[img_atk] + "|" + defense_labels[defense]
+                  + "|" + " ".join(str_rewards) + "|" + " ".join(str_accuracies))
+            f_rew.write(attack_labels[img_atk] + "|" + defense_labels[defense]
+                        + "|" + " ".join(str_rewards) + "|" + " ".join(str_accuracies) + "\n")
+    f_rew.close()
