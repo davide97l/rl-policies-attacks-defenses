@@ -33,19 +33,19 @@ def limit_lists(limit_freq, x_lists, y_lists):
 if __name__ == '__main__':
 
     # Data
-    task = "Breakout"  # Pong
-    model = "ppo"
+    task = "Pong"  # Pong
+    model = "dqn"
     n_lines = 4
-    transfer_model = "ppo"
-    transfer_model_2 = "dqn"
-    transfer_model_3 = "a2c"
-    img_attack = "fgm_eps_0.03"  # fgm_eps_0.05, perfect_attack, fgm_eps_0.3
-    rl_attack = "critical_strategy_attack"  # strategically_timed_attack, uniform_attack, critical_strategy_attack, critical_point_attack, adversarial_policy_attack
+    transfer_model = "dqn"
+    transfer_model_2 = "a2c"
+    transfer_model_3 = "ppo"
+    img_attack = "fgm_eps_0.1"  # fgm_eps_0.05, perfect_attack, fgm_eps_0.3
+    rl_attack = "critical_point_attack"  # strategically_timed_attack, uniform_attack, critical_strategy_attack, critical_point_attack, adversarial_policy_attack
     has_atk_freq = 1
     has_n_attacks = 0
     smoothing = 2
-    limit_freq = 0.15
-    min_freq = 0.0
+    limit_freq = 0.09
+    min_freq = 0.01
     first_equal = False  # make first reward same as first line for all lines
     input_file = [
         "log/" + task + "NoFrameskip-v4/" + model + "/" + rl_attack + "_" + img_attack + ".npy",

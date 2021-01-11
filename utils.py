@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch
-from net.discrete_net import DQN, ConvNet, Actor, Critic
+from net.discrete_net import DQN
 from tianshou.policy import DQNPolicy, A2CPolicy
 from advertorch.attacks import *
 from atari_wrapper import wrap_deepmind
@@ -91,7 +91,7 @@ def make_img_adv_attack(args, adv_net, min_pixel=0., max_pixel=255., targeted=Fa
     # https://advertorch.readthedocs.io/en/latest/advertorch/attacks.html
     """
     eps, clip_min, clip_max, targeted, nb_iter, eps_iter are shared among most of the attacks
-    so they can be defined in 'args' or direclty passed to this function.
+    so they can be defined in 'args' or directly passed to this function.
     Other params specific for each method can be manually defined here.
     """
     obs_adv_atk, atk_type = None, None
@@ -139,6 +139,7 @@ def make_img_adv_attack(args, adv_net, min_pixel=0., max_pixel=255., targeted=Fa
 
 
 def make_victim_network(args, policy):
+    """Given a policy, return a copy of its network adapted to Advertorch interface"""
     if 'dqn' in args.policy:
         args.policy = 'dqn'
     if 'a2c' in args.policy:
