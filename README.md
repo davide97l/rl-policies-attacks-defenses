@@ -1,4 +1,4 @@
-# Tianshou Reinforcement Learning Adversarial Attacks
+# Reinforcement Learning Adversarial Attacks and Defenses
 DQN policy             | Strategically-timed attack | Uniform attack | Adversarial training |
 :-------------------------:|:-------------------------:|:------------|:---------------------|
 ![](results/pong_dqn.gif) | ![](results/pong_strategically_attack.gif) | ![](results/pong_uniform_attack.gif) | ![](results/pong_adversarial_training.gif) |
