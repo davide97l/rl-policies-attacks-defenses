@@ -142,7 +142,7 @@ def offpolicy_trainer(
         if verbose:
             print(f"Epoch #{epoch}: test_reward: {result['rew']:.6f} ± "
                   f"{result['rew_std']:.6f}, best_reward: {best_reward:.6f} ± "
-                  f"{best_reward_std:.6f} in #{best_epoch}, test defense: {result['succ_atks(%)']:.3f} "
+                  f"{best_reward_std:.6f} in #{best_epoch}, test defense (%): {result['succ_atks(%)']:.3f} "
                   )
         if stop_fn and stop_fn(result['rew']):
             break

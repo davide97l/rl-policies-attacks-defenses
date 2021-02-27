@@ -109,17 +109,17 @@ def make_img_adv_attack(args, adv_net, min_pixel=0., max_pixel=255., targeted=Fa
     elif args.image_attack in ["pgda", "pgd", "PGDAttack", "LinfPGDAttack"]:
         obs_adv_atk = PGDAttack(adv_net, eps=args.eps*max_pixel, targeted=targeted,
                                 clip_min=min_pixel, clip_max=max_pixel, nb_iter=args.iterations,
-                                eps_iter=args.eps*max_pixel * 2 / args.iterations)
+                                eps_iter=args.eps*max_pixel)
         atk_type = "pgda_iter_" + str(args.iterations)
     elif args.image_attack == "L2PGDAttack":
         obs_adv_atk = L2PGDAttack(adv_net, eps=args.eps*max_pixel, targeted=targeted,
                                   clip_min=min_pixel, clip_max=max_pixel, nb_iter=args.iterations,
-                                  eps_iter=args.eps*max_pixel * 2 / args.iterations)
+                                  eps_iter=args.eps*max_pixel)
     elif args.image_attack == "SparseL1DescentAttack":
         # https://arxiv.org/abs/1909.05040
         obs_adv_atk = SparseL1DescentAttack(adv_net, eps=args.eps*max_pixel, targeted=targeted,
                                             clip_min=min_pixel, clip_max=max_pixel, nb_iter=args.iterations,
-                                            eps_iter=args.eps*max_pixel * 2 / args.iterations)
+                                            eps_iter=args.eps*max_pixel)
     elif args.image_attack in ["MomentumIterativeAttack", "LinfMomentumIterativeAttack"]:
         obs_adv_atk = MomentumIterativeAttack(adv_net, eps=args.eps*max_pixel, targeted=targeted,
                                               clip_min=min_pixel, clip_max=max_pixel, nb_iter=args.iterations,

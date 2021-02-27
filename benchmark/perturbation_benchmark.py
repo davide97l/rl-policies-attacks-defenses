@@ -8,8 +8,8 @@ from advertorch.attacks import *
 from img_defenses import *
 
 
-# python benchmark/perturbation_benchmark.py --task PongNoFrameskip-v4 --logdir log_benchmark --test-num 5
-# python benchmark/perturbation_benchmark.py --targeted --device "cuda:1"
+# python perturbation_benchmark.py --task PongNoFrameskip-v4 --logdir log_benchmark --test-num 5
+# python perturbation_benchmark.py --targeted --device "cuda:1" --test-num 5
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', type=str, default='PongNoFrameskip-v4')
@@ -42,11 +42,11 @@ if __name__ == '__main__':
     args.target_policy = args.policy
     env = make_atari_env_watch(args)
     # comment the attacks you don't need
-    img_attacks = ["No Attack",
+    img_attacks = [#"No Attack",
                    "GradientSignAttack",  # ok
-                   "LinfPGDAttack",  # ok
+                   #"LinfPGDAttack",  # ok
                    "MomentumIterativeAttack",  # ok
-                   "DeepfoolLinfAttack"
+                   #"DeepfoolLinfAttack"
                   ]
     # you can change attack parameters in the utils.py file
 
@@ -62,12 +62,12 @@ if __name__ == '__main__':
                      "DeepfoolLinfAttack": "Deepfool-Linf"
                      }
     # comment the defences you don't need
-    rl_defenses = ["No Defense",
-                   "FGSMAdversarialTraining",
+    rl_defenses = [#"No Defense",
+                   #"FGSMAdversarialTraining",
                    "PGDAdversarialTraining",
-                   "JPEGFilter",
-                   "BitSqueezing",
-                   "Smoothing",
+                   #"JPEGFilter",
+                   #"BitSqueezing",
+                   #"Smoothing",
                    ]
     defense_labels = {"No Defense": "No Defense",
                       "FGSMAdversarialTraining": "FGSM AdvTr",
@@ -86,7 +86,7 @@ if __name__ == '__main__':
     file_name = "perturbation_benchmark_result.txt"
     if len(rl_defenses) == 1:
         file_name = "perturbation_benchmark_" + str(rl_defenses[0]) + ".txt"
-        f_rew = open(os.path.join(save_path, file_name), "w+")
+    f_rew = open(os.path.join(save_path, file_name), "w+")
 
     args.state_shape = env.observation_space.shape or env.observation_space.n
     args.action_shape = env.env.action_space.shape or env.env.action_space.n
